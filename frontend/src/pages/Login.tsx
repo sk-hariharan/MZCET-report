@@ -30,7 +30,7 @@ export const Login: React.FC = () => {
 
   const handleDemoLogin = async (demoRole: 'staff' | 'hod' | 'admin') => {
     let demoEmail = '';
-    const demoPass = 'password123';
+    const demoPass = 'mzcet@1234';
 
     switch (demoRole) {
       case 'admin':

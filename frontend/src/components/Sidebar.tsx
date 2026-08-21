@@ -10,16 +10,24 @@ import {
   Building2, 
   BarChart3, 
   CalendarDays, 
-  GraduationCap
+  GraduationCap,
+  X
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 
 interface SidebarProps {
   currentTab: string;
   setCurrentTab: (tab: string) => void;
+  mobileMenuOpen?: boolean;
+  setMobileMenuOpen?: (open: boolean) => void;
 }
 
-export const Sidebar: React.FC<SidebarProps> = ({ currentTab, setCurrentTab }) => {
+export const Sidebar: React.FC<SidebarProps> = ({ 
+  currentTab, 
+  setCurrentTab,
+  mobileMenuOpen = false,
+  setMobileMenuOpen
+}) => {
   const { user, logout } = useAuth();
 
   if (!user) return null;
@@ -59,17 +67,34 @@ export const Sidebar: React.FC<SidebarProps> = ({ currentTab, setCurrentTab }) =
 
   const navItems = getNavItems();
 
-  return (
-    <aside className="w-64 bg-slate-900 text-slate-100 flex flex-col h-screen fixed left-0 top-0 border-r border-slate-800 z-20 shadow-2xl">
+  const handleSelectTab = (id: string) => {
+    setCurrentTab(id);
+    if (setMobileMenuOpen) {
+      setMobileMenuOpen(false);
+    }
+  };
+
+  const sidebarContent = (
+    <>
       {/* Brand Header */}
-      <div className="p-4 border-b border-slate-800 flex items-center gap-3 bg-slate-950/60">
-        <div className="p-1.5 bg-white/95 rounded-xl flex-shrink-0 shadow-md border border-white/20">
-          <img src="/mzcet-logo.png" alt="MZCET Logo" className="h-8 w-auto object-contain max-w-[90px]" />
+      <div className="p-4 border-b border-slate-800 flex items-center justify-between bg-slate-950/60">
+        <div className="flex items-center gap-3 min-w-0">
+          <div className="p-1.5 bg-white/95 rounded-xl flex-shrink-0 shadow-md border border-white/20">
+            <img src="/mzcet-logo.png" alt="MZCET Logo" className="h-8 w-auto object-contain max-w-[80px]" />
+          </div>
+          <div className="min-w-0">
+            <h1 className="font-extrabold text-xs leading-tight tracking-wider text-slate-50 truncate">MOUNT ZION</h1>
+            <p className="text-[10px] text-blue-400 font-bold uppercase tracking-widest truncate">FacultyReport</p>
+          </div>
         </div>
-        <div className="min-w-0">
-          <h1 className="font-extrabold text-xs leading-tight tracking-wider text-slate-50 truncate">MOUNT ZION</h1>
-          <p className="text-[10px] text-blue-400 font-bold uppercase tracking-widest truncate">FacultyReport</p>
-        </div>
+        {setMobileMenuOpen && (
+          <button 
+            onClick={() => setMobileMenuOpen(false)}
+            className="md:hidden p-1 text-slate-400 hover:text-slate-100 rounded-lg hover:bg-slate-800"
+          >
+            <X className="h-5 w-5" />
+          </button>
+        )}
       </div>
 
       {/* User Quick Info */}
@@ -104,7 +129,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ currentTab, setCurrentTab }) =
           return (
             <button
               key={item.id}
-              onClick={() => setCurrentTab(item.id)}
+              onClick={() => handleSelectTab(item.id)}
               className={`w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-xs font-bold transition-all duration-200 group text-left ${
                 isActive 
                   ? 'bg-blue-600 text-white shadow-lg shadow-blue-900/30' 
@@ -128,6 +153,28 @@ export const Sidebar: React.FC<SidebarProps> = ({ currentTab, setCurrentTab }) =
           <span>Sign Out</span>
         </button>
       </div>
-    </aside>
+    </>
+  );
+
+  return (
+    <>
+      {/* Desktop Pinned Sidebar */}
+      <aside className="hidden md:flex w-64 bg-slate-900 text-slate-100 flex-col h-screen fixed left-0 top-0 border-r border-slate-800 z-20 shadow-2xl">
+        {sidebarContent}
+      </aside>
+
+      {/* Mobile Backdrop & Drawer */}
+      {mobileMenuOpen && (
+        <div className="md:hidden fixed inset-0 z-50 flex">
+          <div 
+            className="fixed inset-0 bg-slate-950/80 backdrop-blur-xs transition-opacity" 
+            onClick={() => setMobileMenuOpen && setMobileMenuOpen(false)}
+          />
+          <aside className="relative w-64 max-w-[80vw] bg-slate-900 text-slate-100 flex flex-col h-full border-r border-slate-800 z-50 shadow-2xl">
+            {sidebarContent}
+          </aside>
+        </div>
+      )}
+    </>
   );
 };
