@@ -84,7 +84,7 @@ router.post('/', authenticateToken, async (req, res) => {
     res.status(201).json({ message: 'Report created successfully', report: createdReport });
   } catch (error) {
     console.error('Create Report Error:', error);
-    res.status(500).json({ message: 'Failed to create report' });
+    res.status(500).json({ message: error.message || 'Failed to create report' });
   }
 });
 
@@ -238,7 +238,7 @@ router.put('/:id', authenticateToken, async (req, res) => {
     res.json({ message: 'Report updated successfully', report: updated });
   } catch (error) {
     console.error('Update Report Error:', error);
-    res.status(500).json({ message: 'Failed to update report' });
+    res.status(500).json({ message: error.message || 'Failed to update report' });
   }
 });
 

@@ -736,7 +736,11 @@ export const db = {
       for (const section of Object.keys(sectionData)) {
         const rows = sectionData[section];
         if (Array.isArray(rows) && rows.length > 0) {
-          const rowsWithReportId = rows.map(r => ({ ...r, report_id: reportId }));
+          const rowsWithReportId = rows.map(r => {
+            const clean = { ...r, report_id: reportId };
+            delete clean.id;
+            return clean;
+          });
           const { error: subErr } = await supabase.from(section).insert(rowsWithReportId);
           if (subErr) throw subErr;
         }
@@ -754,11 +758,16 @@ export const db = {
         const rows = sectionData[section];
         if (Array.isArray(rows) && rows.length > 0) {
           for (const row of rows) {
-            const rowKeys = Object.keys(row);
-            const rowVals = Object.values(row);
-            const rowPlaceholders = rowKeys.map(() => '?').join(',');
-            const rowSql = `INSERT INTO ${section} (report_id, ${rowKeys.join(',')}) VALUES (?, ${rowPlaceholders})`;
-            await run(rowSql, [reportId, ...rowVals]);
+            const rowClean = { ...row };
+            delete rowClean.id;
+            delete rowClean.report_id;
+            const rowKeys = Object.keys(rowClean);
+            const rowVals = Object.values(rowClean);
+            if (rowKeys.length > 0) {
+              const rowPlaceholders = rowKeys.map(() => '?').join(',');
+              const rowSql = `INSERT INTO ${section} (report_id, ${rowKeys.join(',')}) VALUES (?, ${rowPlaceholders})`;
+              await run(rowSql, [reportId, ...rowVals]);
+            }
           }
         }
       }
@@ -838,7 +847,11 @@ export const db = {
 
         const rows = sectionData[table];
         if (Array.isArray(rows) && rows.length > 0) {
-          const rowsWithReportId = rows.map(r => ({ ...r, report_id: id }));
+          const rowsWithReportId = rows.map(r => {
+            const clean = { ...r, report_id: id };
+            delete clean.id;
+            return clean;
+          });
           const { error: insErr } = await supabase.from(table).insert(rowsWithReportId);
           if (insErr) throw insErr;
         }
@@ -856,11 +869,16 @@ export const db = {
         const rows = sectionData[table];
         if (Array.isArray(rows) && rows.length > 0) {
           for (const row of rows) {
-            const rowKeys = Object.keys(row);
-            const rowVals = Object.values(row);
-            const rowPlaceholders = rowKeys.map(() => '?').join(',');
-            const rowSql = `INSERT INTO ${table} (report_id, ${rowKeys.join(',')}) VALUES (?, ${rowPlaceholders})`;
-            await run(rowSql, [id, ...rowVals]);
+            const rowClean = { ...row };
+            delete rowClean.id;
+            delete rowClean.report_id;
+            const rowKeys = Object.keys(rowClean);
+            const rowVals = Object.values(rowClean);
+            if (rowKeys.length > 0) {
+              const rowPlaceholders = rowKeys.map(() => '?').join(',');
+              const rowSql = `INSERT INTO ${table} (report_id, ${rowKeys.join(',')}) VALUES (?, ${rowPlaceholders})`;
+              await run(rowSql, [id, ...rowVals]);
+            }
           }
         }
       }
