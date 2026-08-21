@@ -22,6 +22,47 @@ import {
 import { useAuth } from '../context/AuthContext';
 import { ACADEMIC_CURRICULUM, CLASS_ASSIGNED_OPTIONS, WORK_PLAN_DEFAULT_ITEMS } from '../constants/curriculumData';
 
+const getFilteredCurriculum = (classAssigned?: string) => {
+  if (!classAssigned) return ACADEMIC_CURRICULUM;
+  const normalized = classAssigned.toUpperCase();
+  
+  if (normalized.includes('I YEAR (SEM 1)')) {
+    return ACADEMIC_CURRICULUM.filter(g => g.year === '1st Year' && g.semester === 'Semester 1');
+  }
+  if (normalized.includes('I YEAR (SEM 2)')) {
+    return ACADEMIC_CURRICULUM.filter(g => g.year === '1st Year' && g.semester === 'Semester 2');
+  }
+  if (normalized.includes('I YEAR')) {
+    return ACADEMIC_CURRICULUM.filter(g => g.year === '1st Year');
+  }
+  
+  if (normalized.includes('II YEAR (SEM 3)')) {
+    return ACADEMIC_CURRICULUM.filter(g => g.year === '2nd Year' && g.semester === 'Semester 3');
+  }
+  if (normalized.includes('II YEAR (SEM 4)')) {
+    return ACADEMIC_CURRICULUM.filter(g => g.year === '2nd Year' && g.semester === 'Semester 4');
+  }
+  if (normalized.includes('II YEAR')) {
+    return ACADEMIC_CURRICULUM.filter(g => g.year === '2nd Year');
+  }
+  
+  if (normalized.includes('III YEAR (SEM 5)')) {
+    return ACADEMIC_CURRICULUM.filter(g => g.year === '3rd Year' && g.semester === 'Semester 5');
+  }
+  if (normalized.includes('III YEAR (SEM 6)')) {
+    return ACADEMIC_CURRICULUM.filter(g => g.year === '3rd Year');
+  }
+  if (normalized.includes('III YEAR')) {
+    return ACADEMIC_CURRICULUM.filter(g => g.year === '3rd Year');
+  }
+  
+  if (normalized.includes('IV YEAR (SEM 7)') || normalized.includes('IV YEAR (SEM 8)') || normalized.includes('IV YEAR')) {
+    return ACADEMIC_CURRICULUM.filter(g => g.year === '4th Year');
+  }
+  
+  return ACADEMIC_CURRICULUM;
+};
+
 export const MultiStepReportForm = ({ reportType, onCancel, editReportId = null }) => {
   const { token, user, apiBaseUrl } = useAuth();
   const [currentStep, setCurrentStep] = useState(1);
@@ -486,7 +527,10 @@ export const MultiStepReportForm = ({ reportType, onCancel, editReportId = null 
                         value={CLASS_ASSIGNED_OPTIONS.includes(t.class_assigned) ? t.class_assigned : 'II YEAR'}
                         onChange={e => {
                           const updated = [...teaching];
-                          updated[idx].class_assigned = e.target.value;
+                          if (updated[idx].class_assigned !== e.target.value) {
+                            updated[idx].class_assigned = e.target.value;
+                            updated[idx].subject_name = ''; // Clear subject name when class changes
+                          }
                           setTeaching(updated);
                         }}
                       >
@@ -509,13 +553,18 @@ export const MultiStepReportForm = ({ reportType, onCancel, editReportId = null 
                         }}
                       >
                         <option value="">-- Select Course --</option>
-                        {ACADEMIC_CURRICULUM.map((group, gIdx) => (
+                        {getFilteredCurriculum(t.class_assigned).map((group, gIdx) => (
                           <optgroup key={gIdx} label={`${group.year} – ${group.semester}`}>
                             {group.subjects.map((sub, sIdx) => (
                               <option key={sIdx} value={sub.full}>{sub.full}</option>
                             ))}
                           </optgroup>
                         ))}
+                        {t.subject_name && 
+                         !getFilteredCurriculum(t.class_assigned).flatMap(c => c.subjects).some(s => s.full === t.subject_name) && 
+                         ACADEMIC_CURRICULUM.flatMap(c => c.subjects).some(s => s.full === t.subject_name) && (
+                          <option value={t.subject_name}>{t.subject_name}</option>
+                        )}
                         <option value="CUSTOM">✏️ Custom Course Name</option>
                       </select>
 
