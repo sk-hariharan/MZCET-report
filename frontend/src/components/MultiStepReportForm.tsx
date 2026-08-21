@@ -1,11 +1,11 @@
 import React, { useState, useEffect } from 'react';
-import { 
-  Plus, 
-  Trash2, 
-  ArrowLeft, 
-  ArrowRight, 
-  Save, 
-  CheckCircle, 
+import {
+  Plus,
+  Trash2,
+  ArrowLeft,
+  ArrowRight,
+  Save,
+  CheckCircle,
   AlertTriangle,
   Upload,
   X,
@@ -20,47 +20,65 @@ import {
   CheckSquare
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
-import { ACADEMIC_CURRICULUM, CLASS_ASSIGNED_OPTIONS, WORK_PLAN_DEFAULT_ITEMS } from '../constants/curriculumData';
+import { ACADEMIC_CURRICULUM, CLASS_ASSIGNED_OPTIONS, WORK_PLAN_DEFAULT_ITEMS, DEPARTMENTS, YEARS, COURSES_DATA } from '../constants/curriculumData';
 
-const getFilteredCurriculum = (classAssigned?: string) => {
-  if (!classAssigned) return ACADEMIC_CURRICULUM;
-  const normalized = classAssigned.toUpperCase();
-  
-  if (normalized.includes('I YEAR (SEM 1)')) {
-    return ACADEMIC_CURRICULUM.filter(g => g.year === '1st Year' && g.semester === 'Semester 1');
+const parseClassAssigned = (classAssigned: string = '', subjectName: string = '', userDept: string = '') => {
+  const parts = classAssigned.split(' | ');
+  if (parts.length === 3) {
+    return {
+      department: parts[0],
+      year: parts[1],
+      semester: parts[2]
+    };
   }
-  if (normalized.includes('I YEAR (SEM 2)')) {
-    return ACADEMIC_CURRICULUM.filter(g => g.year === '1st Year' && g.semester === 'Semester 2');
+
+  // Look up in COURSES_DATA if subjectName is present
+  if (subjectName) {
+    const course = COURSES_DATA.find(
+      c => c.full.toUpperCase() === subjectName.toUpperCase() ||
+        c.name.toUpperCase() === subjectName.toUpperCase()
+    );
+    if (course) {
+      return {
+        department: course.department,
+        year: course.year,
+        semester: course.semester
+      };
+    }
   }
-  if (normalized.includes('I YEAR')) {
-    return ACADEMIC_CURRICULUM.filter(g => g.year === '1st Year');
+
+  // Fallback keyword parsing
+  const normClass = classAssigned.toUpperCase();
+  let year = 'II YEAR';
+  if (normClass.includes('I YEAR') || normClass.includes('1ST YEAR') || normClass.includes('FIRST YEAR')) {
+    year = 'I YEAR';
+  } else if (normClass.includes('II YEAR') || normClass.includes('2ND YEAR') || normClass.includes('SECOND YEAR')) {
+    year = 'II YEAR';
+  } else if (normClass.includes('III YEAR') || normClass.includes('3RD YEAR') || normClass.includes('THIRD YEAR')) {
+    year = 'III YEAR';
+  } else if (normClass.includes('IV YEAR') || normClass.includes('4TH YEAR') || normClass.includes('FOURTH YEAR')) {
+    year = 'IV YEAR';
   }
-  
-  if (normalized.includes('II YEAR (SEM 3)')) {
-    return ACADEMIC_CURRICULUM.filter(g => g.year === '2nd Year' && g.semester === 'Semester 3');
-  }
-  if (normalized.includes('II YEAR (SEM 4)')) {
-    return ACADEMIC_CURRICULUM.filter(g => g.year === '2nd Year' && g.semester === 'Semester 4');
-  }
-  if (normalized.includes('II YEAR')) {
-    return ACADEMIC_CURRICULUM.filter(g => g.year === '2nd Year');
-  }
-  
-  if (normalized.includes('III YEAR (SEM 5)')) {
-    return ACADEMIC_CURRICULUM.filter(g => g.year === '3rd Year' && g.semester === 'Semester 5');
-  }
-  if (normalized.includes('III YEAR (SEM 6)')) {
-    return ACADEMIC_CURRICULUM.filter(g => g.year === '3rd Year');
-  }
-  if (normalized.includes('III YEAR')) {
-    return ACADEMIC_CURRICULUM.filter(g => g.year === '3rd Year');
-  }
-  
-  if (normalized.includes('IV YEAR (SEM 7)') || normalized.includes('IV YEAR (SEM 8)') || normalized.includes('IV YEAR')) {
-    return ACADEMIC_CURRICULUM.filter(g => g.year === '4th Year');
-  }
-  
-  return ACADEMIC_CURRICULUM;
+
+  let semester = 'Semester 3';
+  if (year === 'I YEAR') semester = 'Semester 1';
+  else if (year === 'II YEAR') semester = 'Semester 3';
+  else if (year === 'III YEAR') semester = 'Semester 5';
+  else if (year === 'IV YEAR') semester = 'Semester 7';
+
+  // Specific semester keyword matching
+  if (normClass.includes('SEM 1') || normClass.includes('SEMESTER 1')) semester = 'Semester 1';
+  else if (normClass.includes('SEM 2') || normClass.includes('SEMESTER 2')) semester = 'Semester 2';
+  else if (normClass.includes('SEM 3') || normClass.includes('SEMESTER 3')) semester = 'Semester 3';
+  else if (normClass.includes('SEM 4') || normClass.includes('SEMESTER 4')) semester = 'Semester 4';
+  else if (normClass.includes('SEM 5') || normClass.includes('SEMESTER 5')) semester = 'Semester 5';
+  else if (normClass.includes('SEM 6') || normClass.includes('SEMESTER 6')) semester = 'Semester 6';
+  else if (normClass.includes('SEM 7') || normClass.includes('SEMESTER 7')) semester = 'Semester 7';
+  else if (normClass.includes('SEM 8') || normClass.includes('SEMESTER 8')) semester = 'Semester 8';
+
+  const department = userDept || 'INFORMATION TECHNOLOGY';
+
+  return { department, year, semester };
 };
 
 export const MultiStepReportForm = ({ reportType, onCancel, editReportId = null }) => {
@@ -80,7 +98,7 @@ export const MultiStepReportForm = ({ reportType, onCancel, editReportId = null 
   // -------------------------------------------------------------
   // Form State Definitions (Matching Sections A through H)
   // -------------------------------------------------------------
-  
+
   // 1. Basic Parameters
   const [meta, setMeta] = useState({
     academic_year: user?.academic_year || '2026-2027',
@@ -94,7 +112,7 @@ export const MultiStepReportForm = ({ reportType, onCancel, editReportId = null 
 
   // Section A: Syllabus Completion (Theory & Laboratory)
   const [teaching, setTeaching] = useState([]);
-  
+
   // Section B: Events Organised
   const [events, setEvents] = useState([]);
 
@@ -161,7 +179,18 @@ export const MultiStepReportForm = ({ reportType, onCancel, editReportId = null 
             });
 
             // Populate child rows
-            if (r.teaching_activities?.length > 0) setTeaching(r.teaching_activities);
+            if (r.teaching_activities?.length > 0) {
+              const loadedActivities = r.teaching_activities.map(act => {
+                const parsed = parseClassAssigned(act.class_assigned, act.subject_name, user?.department_name);
+                return {
+                  ...act,
+                  department: parsed.department,
+                  year: parsed.year,
+                  semester: parsed.semester
+                };
+              });
+              setTeaching(loadedActivities);
+            }
             if (r.events?.length > 0) setEvents(r.events);
             if (r.fdp_training?.length > 0) setFdp(r.fdp_training);
             if (r.achievements?.length > 0) {
@@ -248,7 +277,10 @@ export const MultiStepReportForm = ({ reportType, onCancel, editReportId = null 
       end_date: meta.end_date,
       status,
       sections: {
-        teaching_activities: teaching,
+        teaching_activities: teaching.map(({ department, year, semester, ...rest }) => ({
+          ...rest,
+          class_assigned: `${department || ''} | ${year || ''} | ${semester || ''}`
+        })),
         events,
         fdp_training: fdp,
         achievements: achievementsList,
@@ -278,7 +310,7 @@ export const MultiStepReportForm = ({ reportType, onCancel, editReportId = null 
       const data = await res.json();
 
       if (!res.ok) throw new Error(data.message || 'Failed to save draft.');
-      
+
       setReportId(data.report.id);
       setLastSaved(new Date().toLocaleTimeString());
       alert('Draft saved successfully to system database.');
@@ -339,7 +371,7 @@ export const MultiStepReportForm = ({ reportType, onCancel, editReportId = null 
 
     setUploadingFile(true);
     setErrorMsg(null);
-    
+
     const formData = new FormData();
     formData.append('document', file);
     formData.append('report_id', reportId);
@@ -362,18 +394,26 @@ export const MultiStepReportForm = ({ reportType, onCancel, editReportId = null 
 
   // Row Adders
   const addTheoryRow = () => {
+    const userDept = user?.department_name ? user.department_name.toUpperCase() : 'INFORMATION TECHNOLOGY';
     setTeaching(prev => [...prev, {
-      subject_name: '', class_assigned: 'II YEAR', course_type: 'Theory',
+      subject_name: '', class_assigned: `${userDept} | II YEAR | Semester 3`, course_type: 'Theory',
       instructor_name: user?.name || '', teaching_hours: 20, current_unit: 'Unit 1 & 2 Completed',
-      syllabus_pct: 40, exp_completed: '', exp_remaining: ''
+      syllabus_pct: 40, exp_completed: '', exp_remaining: '',
+      department: userDept,
+      year: 'II YEAR',
+      semester: 'Semester 3'
     }]);
   };
 
   const addLabRow = () => {
+    const userDept = user?.department_name ? user.department_name.toUpperCase() : 'INFORMATION TECHNOLOGY';
     setTeaching(prev => [...prev, {
-      subject_name: '', class_assigned: 'II YEAR', course_type: 'Laboratory',
+      subject_name: '', class_assigned: `${userDept} | II YEAR | Semester 3`, course_type: 'Laboratory',
       instructor_name: user?.name || '', teaching_hours: 20, current_unit: '',
-      syllabus_pct: 50, exp_completed: 'EX: 6/15', exp_remaining: 'Ex: 8/15'
+      syllabus_pct: 50, exp_completed: 'EX: 6/15', exp_remaining: 'Ex: 8/15',
+      department: userDept,
+      year: 'II YEAR',
+      semester: 'Semester 3'
     }]);
   };
 
@@ -431,9 +471,9 @@ export const MultiStepReportForm = ({ reportType, onCancel, editReportId = null 
               </div>
               <div>
                 <label className="block text-xs font-bold text-slate-500 uppercase mb-1">Academic Year</label>
-                <select className="w-full border p-3 rounded-xl text-slate-800 font-semibold focus:ring-2 focus:ring-blue-500 outline-none" 
-                  value={meta.academic_year} 
-                  onChange={e => setMeta({...meta, academic_year: e.target.value})}
+                <select className="w-full border p-3 rounded-xl text-slate-800 font-semibold focus:ring-2 focus:ring-blue-500 outline-none"
+                  value={meta.academic_year}
+                  onChange={e => setMeta({ ...meta, academic_year: e.target.value })}
                 >
                   <option value="2026-2027">2026-2027 (Odd Semester)</option>
                   <option value="2025-2026">2025-2026</option>
@@ -442,8 +482,8 @@ export const MultiStepReportForm = ({ reportType, onCancel, editReportId = null 
               <div>
                 <label className="block text-xs font-bold text-slate-500 uppercase mb-1">Semester</label>
                 <select className="w-full border p-3 rounded-xl text-slate-800 font-semibold focus:ring-2 focus:ring-blue-500 outline-none"
-                  value={meta.semester} 
-                  onChange={e => setMeta({...meta, semester: e.target.value})}
+                  value={meta.semester}
+                  onChange={e => setMeta({ ...meta, semester: e.target.value })}
                 >
                   <option value="ODD">ODD Semester</option>
                   <option value="EVEN">EVEN Semester</option>
@@ -453,7 +493,7 @@ export const MultiStepReportForm = ({ reportType, onCancel, editReportId = null 
                 <label className="block text-xs font-bold text-slate-500 uppercase mb-1">Reporting Month</label>
                 <select className="w-full border p-3 rounded-xl text-slate-800 font-semibold focus:ring-2 focus:ring-blue-500 outline-none"
                   value={meta.month}
-                  onChange={e => setMeta({...meta, month: e.target.value})}
+                  onChange={e => setMeta({ ...meta, month: e.target.value })}
                 >
                   {['August', 'July', 'September', 'October', 'November', 'December', 'January', 'February', 'March', 'April', 'May', 'June'].map(m => (
                     <option key={m} value={m}>{m}</option>
@@ -464,14 +504,14 @@ export const MultiStepReportForm = ({ reportType, onCancel, editReportId = null 
                 <label className="block text-xs font-bold text-slate-500 uppercase mb-1">Reporting Start Date</label>
                 <input type="date" className="w-full border p-3 rounded-xl text-slate-800 font-semibold outline-none"
                   value={meta.start_date}
-                  onChange={e => setMeta({...meta, start_date: e.target.value})}
+                  onChange={e => setMeta({ ...meta, start_date: e.target.value })}
                 />
               </div>
               <div>
                 <label className="block text-xs font-bold text-slate-500 uppercase mb-1">Reporting End Date</label>
                 <input type="date" className="w-full border p-3 rounded-xl text-slate-800 font-semibold outline-none"
                   value={meta.end_date}
-                  onChange={e => setMeta({...meta, end_date: e.target.value})}
+                  onChange={e => setMeta({ ...meta, end_date: e.target.value })}
                 />
               </div>
               <div>
@@ -519,56 +559,124 @@ export const MultiStepReportForm = ({ reportType, onCancel, editReportId = null 
                     <h4 className="font-bold text-slate-800 text-sm">Course Entry #{idx + 1}</h4>
                   </div>
 
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
                     <div>
-                      <label className="text-xs font-bold text-slate-500 uppercase mb-1 block">Class Assigned <span className="text-red-500">*</span></label>
+                      <label className="text-xs font-bold text-slate-500 uppercase mb-1 block">Department <span className="text-red-500">*</span></label>
                       <select
                         className="w-full border p-2.5 rounded-xl text-slate-800 font-semibold outline-none bg-white"
-                        value={CLASS_ASSIGNED_OPTIONS.includes(t.class_assigned) ? t.class_assigned : 'II YEAR'}
+                        value={t.department || ''}
                         onChange={e => {
                           const updated = [...teaching];
-                          if (updated[idx].class_assigned !== e.target.value) {
-                            updated[idx].class_assigned = e.target.value;
-                            updated[idx].subject_name = ''; // Clear subject name when class changes
+                          if (updated[idx].department !== e.target.value) {
+                            updated[idx].department = e.target.value;
+                            updated[idx].year = '';
+                            updated[idx].semester = '';
+                            updated[idx].subject_name = ''; // Reset dependent fields
                           }
                           setTeaching(updated);
                         }}
                       >
-                        {CLASS_ASSIGNED_OPTIONS.map((cls, cIdx) => (
-                          <option key={cIdx} value={cls}>{cls}</option>
+                        <option value="">-- Select Dept --</option>
+                        {DEPARTMENTS.map((dept, dIdx) => (
+                          <option key={dIdx} value={dept}>{dept}</option>
                         ))}
                       </select>
                     </div>
 
                     <div>
-                      <label className="text-xs font-bold text-slate-500 uppercase mb-1 block">Sub. Code & Name <span className="text-red-500">*</span></label>
-                      <select 
+                      <label className="text-xs font-bold text-slate-500 uppercase mb-1 block animate-none">Class Assigned / Year <span className="text-red-500">*</span></label>
+                      <select
                         className="w-full border p-2.5 rounded-xl text-slate-800 font-semibold outline-none bg-white"
-                        value={ACADEMIC_CURRICULUM.flatMap(c => c.subjects).some(s => s.full === t.subject_name) ? t.subject_name : (t.subject_name ? 'CUSTOM' : '')}
+                        value={t.year || ''}
+                        onChange={e => {
+                          const updated = [...teaching];
+                          if (updated[idx].year !== e.target.value) {
+                            updated[idx].year = e.target.value;
+                            updated[idx].semester = '';
+                            updated[idx].subject_name = ''; // Reset dependent fields
+                          }
+                          setTeaching(updated);
+                        }}
+                      >
+                        <option value="">-- Select Year --</option>
+                        {YEARS.map((yr, yIdx) => (
+                          <option key={yIdx} value={yr}>{yr}</option>
+                        ))}
+                      </select>
+                    </div>
+
+                    <div>
+                      <label className="text-xs font-bold text-slate-500 uppercase mb-1 block animate-none">Semester <span className="text-red-500">*</span></label>
+                      <select
+                        className="w-full border p-2.5 rounded-xl text-slate-800 font-semibold outline-none bg-white"
+                        value={t.semester || ''}
+                        disabled={!t.year}
+                        onChange={e => {
+                          const updated = [...teaching];
+                          if (updated[idx].semester !== e.target.value) {
+                            updated[idx].semester = e.target.value;
+                            updated[idx].subject_name = ''; // Reset dependent fields
+                          }
+                          setTeaching(updated);
+                        }}
+                      >
+                        <option value="">-- Select Semester --</option>
+                        {t.year === 'I YEAR' && (
+                          <>
+                            <option value="Semester 1">Semester 1</option>
+                            <option value="Semester 2">Semester 2</option>
+                          </>
+                        )}
+                        {t.year === 'II YEAR' && (
+                          <>
+                            <option value="Semester 3">Semester 3</option>
+                            <option value="Semester 4">Semester 4</option>
+                          </>
+                        )}
+                        {t.year === 'III YEAR' && (
+                          <>
+                            <option value="Semester 5">Semester 5</option>
+                            <option value="Semester 6">Semester 6</option>
+                          </>
+                        )}
+                        {t.year === 'IV YEAR' && (
+                          <>
+                            <option value="Semester 7">Semester 7</option>
+                            <option value="Semester 8">Semester 8</option>
+                          </>
+                        )}
+                      </select>
+                    </div>
+
+                    <div>
+                      <label className="text-xs font-bold text-slate-500 uppercase mb-1 block animate-none">Sub. Code & Name <span className="text-red-500">*</span></label>
+                      <select
+                        className="w-full border p-2.5 rounded-xl text-slate-800 font-semibold outline-none bg-white"
+                        value={COURSES_DATA.some(s => s.full === t.subject_name) ? t.subject_name : (t.subject_name ? 'CUSTOM' : '')}
+                        disabled={!t.department || !t.year || !t.semester}
                         onChange={e => {
                           const val = e.target.value;
                           const updated = [...teaching];
-                          if (val !== 'CUSTOM') updated[idx].subject_name = val;
+                          if (val !== 'CUSTOM') {
+                            updated[idx].subject_name = val;
+                          } else {
+                            updated[idx].subject_name = '';
+                          }
                           setTeaching(updated);
                         }}
                       >
                         <option value="">-- Select Course --</option>
-                        {getFilteredCurriculum(t.class_assigned).map((group, gIdx) => (
-                          <optgroup key={gIdx} label={`${group.year} – ${group.semester}`}>
-                            {group.subjects.map((sub, sIdx) => (
-                              <option key={sIdx} value={sub.full}>{sub.full}</option>
-                            ))}
-                          </optgroup>
+                        {COURSES_DATA.filter(course =>
+                          course.department.toUpperCase() === (t.department || '').toUpperCase() &&
+                          course.year.toUpperCase() === (t.year || '').toUpperCase() &&
+                          course.semester.toUpperCase() === (t.semester || '').toUpperCase()
+                        ).map((course, cIdx) => (
+                          <option key={cIdx} value={course.full}>{course.full}</option>
                         ))}
-                        {t.subject_name && 
-                         !getFilteredCurriculum(t.class_assigned).flatMap(c => c.subjects).some(s => s.full === t.subject_name) && 
-                         ACADEMIC_CURRICULUM.flatMap(c => c.subjects).some(s => s.full === t.subject_name) && (
-                          <option value={t.subject_name}>{t.subject_name}</option>
-                        )}
                         <option value="CUSTOM">✏️ Custom Course Name</option>
                       </select>
 
-                      {(!t.subject_name || !ACADEMIC_CURRICULUM.flatMap(c => c.subjects).some(s => s.full === t.subject_name)) && (
+                      {(!t.subject_name || !COURSES_DATA.some(s => s.full === t.subject_name)) && (
                         <input type="text" className="w-full border p-2.5 rounded-xl text-slate-800 mt-2 bg-blue-50/50" placeholder="Type custom course code & name..."
                           value={t.subject_name || ''} onChange={e => {
                             const updated = [...teaching];
@@ -1180,7 +1288,7 @@ export const MultiStepReportForm = ({ reportType, onCancel, editReportId = null 
         return (
           <div className="space-y-6">
             <h3 className="text-lg font-extrabold text-slate-900 border-b pb-2">Step 9: Supporting Documents Upload & Final Verification Submit</h3>
-            
+
             {/* File Upload Box */}
             <div className="bg-slate-50 border-2 border-dashed border-slate-300 rounded-2xl p-6 text-center space-y-4">
               <Upload className="h-10 w-10 text-slate-400 mx-auto" />
@@ -1278,13 +1386,12 @@ export const MultiStepReportForm = ({ reportType, onCancel, editReportId = null 
                 key={idx}
                 type="button"
                 onClick={() => setCurrentStep(stepNum)}
-                className={`flex-1 text-center py-2 px-1 rounded-xl transition-all flex flex-col items-center ${
-                  isActive
+                className={`flex-1 text-center py-2 px-1 rounded-xl transition-all flex flex-col items-center ${isActive
                     ? 'bg-blue-600 text-white shadow-md font-extrabold'
                     : isCompleted
-                    ? 'bg-blue-50 text-blue-700 font-bold hover:bg-blue-100'
-                    : 'text-slate-500 hover:bg-slate-50 font-semibold'
-                }`}
+                      ? 'bg-blue-50 text-blue-700 font-bold hover:bg-blue-100'
+                      : 'text-slate-500 hover:bg-slate-50 font-semibold'
+                  }`}
               >
                 <span className="text-[10px] opacity-80 uppercase tracking-wider">Step {stepNum}</span>
                 <span className="text-[11px] truncate max-w-[100px]">{st}</span>

@@ -23,10 +23,10 @@ interface ReportReviewModalProps {
   onActionComplete?: (status: string) => void;
 }
 
-export const ReportReviewModal: React.FC<ReportReviewModalProps> = ({ 
-  reportId, 
-  onClose, 
-  onActionComplete 
+export const ReportReviewModal: React.FC<ReportReviewModalProps> = ({
+  reportId,
+  onClose,
+  onActionComplete
 }) => {
   const { token, user, apiBaseUrl } = useAuth();
   const [report, setReport] = useState<FullReport | null>(null);
@@ -195,7 +195,14 @@ export const ReportReviewModal: React.FC<ReportReviewModalProps> = ({
               {/* Teaching Activities */}
               {renderSection('Teaching & Academic Activities', BookOpen, report.teaching_activities, (t, idx) => (
                 <div key={idx} className="bg-slate-50/70 p-3.5 rounded-xl space-y-1 border border-slate-100">
-                  <p className="font-bold text-xs text-slate-900">{t.subject_name} — <span className="text-blue-600 font-semibold">{t.class_assigned}</span></p>
+                  <p className="font-bold text-xs text-slate-900">
+                    {t.subject_name} —{' '}
+                    <span className="text-blue-600 font-semibold">
+                      {t.class_assigned && t.class_assigned.includes(' | ')
+                        ? `${t.class_assigned.split(' | ')[1]} - ${t.class_assigned.split(' | ')[2]} (${t.class_assigned.split(' | ')[0]})`
+                        : t.class_assigned}
+                    </span>
+                  </p>
                   {renderKeyValue('Classes Taken / Hours', `${t.classes_taken || 0} classes (${t.teaching_hours || 0} hrs)`)}
                   {renderKeyValue('Syllabus Completion', `${t.syllabus_pct || 0}%`)}
                   {renderKeyValue('Lesson Plan Status', t.lesson_plan_status)}

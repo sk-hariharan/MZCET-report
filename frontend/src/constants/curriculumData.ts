@@ -93,6 +93,149 @@ export const ACADEMIC_CURRICULUM: SemesterGroup[] = [
   }
 ];
 
+export interface CourseItem {
+  department: string;
+  year: string;
+  semester: string;
+  code: string;
+  name: string;
+  full: string;
+}
+
+export const DEPARTMENTS = [
+  'INFORMATION TECHNOLOGY',
+  'COMPUTER SCIENCE & ENGINEERING',
+  'ELECTRONICS & COMMUNICATION ENGINEERING',
+  'ELECTRICAL & ELECTRONICS ENGINEERING',
+  'MECHANICAL ENGINEERING',
+  'CIVIL ENGINEERING'
+];
+
+export const YEARS = ['I YEAR', 'II YEAR', 'III YEAR', 'IV YEAR'];
+
+const SUBJECT_TEMPLATES: { [key: string]: { code: string, name: string }[] } = {
+  'I YEAR_Semester 1': [
+    { code: 'MA3151', name: 'Matrices and Calculus' },
+    { code: 'PH3151', name: 'Engineering Physics' },
+    { code: 'CY3151', name: 'Engineering Chemistry' },
+    { code: 'GE3151', name: 'Problem Solving and Python Programming' },
+    { code: 'HS3152', name: 'Heritage of Tamils' }
+  ],
+  'I YEAR_Semester 2': [
+    { code: 'HS3252', name: 'Professional English – II' },
+    { code: 'MA3251', name: 'Statistics and Numerical Methods' },
+    { code: 'PH3256', name: 'Physics for Information Science' },
+    { code: 'BE3251', name: 'Basic Electrical and Electronics Engineering' },
+    { code: 'CS3251', name: 'Programming in C' }
+  ],
+  'II YEAR_Semester 3': [
+    { code: 'MA3354', name: 'Discrete Mathematics' },
+    { code: 'CS3351', name: 'Digital Principles and Computer Organization' },
+    { code: 'CS3352', name: 'Foundations of Data Science' },
+    { code: 'CS3391', name: 'Object Oriented Programming' },
+    { code: 'CS3291', name: 'Data Structures and Algorithms' }
+  ],
+  'II YEAR_Semester 4': [
+    { code: 'CS3452', name: 'Theory of Computation' },
+    { code: 'CS3491', name: 'Artificial Intelligence and Machine Learning' },
+    { code: 'CS3492', name: 'Database Management Systems' },
+    { code: 'CS3451', name: 'Introduction to Operating Systems' },
+    { code: 'GE3451', name: 'Environmental Sciences and Sustainability' }
+  ],
+  'III YEAR_Semester 5': [
+    { code: 'CS3591', name: 'Computer Networks (T+L)' },
+    { code: 'CS3551', name: 'Distributed Computing' },
+    { code: 'CS3691', name: 'Embedded Systems and IoT (T+L)' },
+    { code: 'IT3501', name: 'Full Stack Web Development' },
+    { code: 'IT3511', name: 'Full Stack Web Development Laboratory' }
+  ],
+  'III YEAR_Semester 6': [
+    { code: 'CS3692', name: 'Software Engineering and Agile Methodologies' },
+    { code: 'IT3601', name: 'Mobile Communication and Application Development' },
+    { code: 'CCS343', name: 'Mobile Application Development Laboratory' },
+    { code: 'CCS356', name: 'Software Testing and Quality Assurance' }
+  ],
+  'IV YEAR_Semester 7': [
+    { code: 'GE3791', name: 'Human Values and Ethics' },
+    { code: 'GE3751', name: 'Principles of Management' },
+    { code: 'AI3021', name: 'OE 2 IT in Agriculture System' },
+    { code: 'IT3701', name: 'Advanced Web Technology' }
+  ],
+  'IV YEAR_Semester 8': [
+    { code: 'IT3811', name: 'Project Work Phase II' },
+    { code: 'OME354', name: 'OE 3 Applied Design Thinking' },
+    { code: 'CRA332', name: 'OE 4 Drone Technologies' }
+  ]
+};
+
+export const COURSES_DATA: CourseItem[] = [];
+
+DEPARTMENTS.forEach(dept => {
+  YEARS.forEach(year => {
+    const semesters =
+      year === 'I YEAR' ? ['Semester 1', 'Semester 2'] :
+        year === 'II YEAR' ? ['Semester 3', 'Semester 4'] :
+          year === 'III YEAR' ? ['Semester 5', 'Semester 6'] :
+            ['Semester 7', 'Semester 8'];
+
+    semesters.forEach(sem => {
+      const templateKey = `${year}_${sem}`;
+      const templates = SUBJECT_TEMPLATES[templateKey] || [];
+
+      templates.forEach(t => {
+        let code = t.code;
+        let name = t.name;
+
+        if (dept === 'COMPUTER SCIENCE & ENGINEERING') {
+          code = code.replace(/^IT/, 'CS');
+        } else if (dept === 'ELECTRONICS & COMMUNICATION ENGINEERING') {
+          code = code.replace(/^(IT|CS|GE|MA|PH|CY|BE)/, 'EC');
+          name = name
+            .replace('Full Stack Web Development', 'Microcontrollers & VLSI Design')
+            .replace('Data Structures and Algorithms', 'Signals and Systems')
+            .replace('Matrices and Calculus', 'Engineering Mathematics I')
+            .replace('Operating Systems', 'Digital Communication')
+            .replace('Embedded Systems and IoT', 'Embedded Systems & ECE Lab')
+            .replace('Computer Networks', 'Wireless Communications');
+        } else if (dept === 'ELECTRICAL & ELECTRONICS ENGINEERING') {
+          code = code.replace(/^(IT|CS|GE|MA|PH|CY|BE)/, 'EE');
+          name = name
+            .replace('Full Stack Web Development', 'Power Electronics & Drives')
+            .replace('Data Structures and Algorithms', 'Electric Circuits')
+            .replace('Matrices and Calculus', 'Engineering Mathematics I')
+            .replace('Operating Systems', 'Control Systems')
+            .replace('Embedded Systems and IoT', 'Electrical Machines');
+        } else if (dept === 'MECHANICAL ENGINEERING') {
+          code = code.replace(/^(IT|CS|GE|MA|PH|CY|BE)/, 'ME');
+          name = name
+            .replace('Full Stack Web Development', 'Thermodynamics')
+            .replace('Data Structures and Algorithms', 'Fluid Mechanics')
+            .replace('Matrices and Calculus', 'Engineering Mathematics I')
+            .replace('Operating Systems', 'Kinematics of Machinery')
+            .replace('Embedded Systems and IoT', 'CAD/CAM Laboratory');
+        } else if (dept === 'CIVIL ENGINEERING') {
+          code = code.replace(/^(IT|CS|GE|MA|PH|CY|BE)/, 'CE');
+          name = name
+            .replace('Full Stack Web Development', 'Structural Analysis')
+            .replace('Data Structures and Algorithms', 'Surveying & Levelling')
+            .replace('Matrices and Calculus', 'Engineering Mathematics I')
+            .replace('Operating Systems', 'Soil Mechanics')
+            .replace('Embedded Systems and IoT', 'Concrete Technology Lab');
+        }
+
+        COURSES_DATA.push({
+          department: dept,
+          year,
+          semester: sem,
+          code,
+          name,
+          full: `${code} - ${name}`
+        });
+      });
+    });
+  });
+});
+
 export const CLASS_ASSIGNED_OPTIONS = [
   'II YEAR',
   'III YEAR',

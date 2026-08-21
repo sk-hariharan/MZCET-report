@@ -152,11 +152,11 @@ export const ReportPreview: React.FC<ReportPreviewProps> = ({ reportId, onBack, 
 
   return (
     <div className="space-y-6 max-w-6xl mx-auto">
-      
+
       {/* Top Navigation Bar */}
       <div className="bg-white border border-slate-200/80 rounded-3xl p-5 shadow-sm flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div className="flex items-center gap-3">
-          <button 
+          <button
             onClick={onBack}
             className="p-2.5 hover:bg-slate-100 rounded-2xl text-slate-600 hover:text-slate-900 transition-colors"
           >
@@ -179,19 +179,19 @@ export const ReportPreview: React.FC<ReportPreviewProps> = ({ reportId, onBack, 
         <div className="flex items-center gap-2">
           {report.status !== 'Draft' && (
             <>
-              <button 
+              <button
                 onClick={handleDownloadPdf}
                 className="flex items-center gap-2 bg-rose-600 hover:bg-rose-700 text-white font-extrabold text-xs py-2.5 px-4 rounded-xl shadow-md shadow-rose-900/20 transition-all hover:scale-105"
               >
                 <FileText className="h-4 w-4" /> PDF Report
               </button>
-              <button 
+              <button
                 onClick={handleDownloadWord}
                 className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white font-extrabold text-xs py-2.5 px-4 rounded-xl shadow-md shadow-blue-900/20 transition-all hover:scale-105"
               >
                 <FileText className="h-4 w-4" /> Word DOCX
               </button>
-              <button 
+              <button
                 onClick={handleDownloadPptx}
                 className="flex items-center gap-2 bg-amber-600 hover:bg-amber-700 text-white font-extrabold text-xs py-2.5 px-4 rounded-xl shadow-md shadow-amber-900/20 transition-all hover:scale-105"
               >
@@ -200,7 +200,7 @@ export const ReportPreview: React.FC<ReportPreviewProps> = ({ reportId, onBack, 
             </>
           )}
           {onEdit && (report.status === 'Draft' || report.status === 'Rejected') && (
-            <button 
+            <button
               onClick={() => onEdit(report.id, report.report_type)}
               className="bg-slate-900 hover:bg-slate-800 text-white font-extrabold text-xs py-2.5 px-4 rounded-xl shadow-md transition-all"
             >
@@ -246,11 +246,10 @@ export const ReportPreview: React.FC<ReportPreviewProps> = ({ reportId, onBack, 
 
       {/* Review Feedback Alert if Rejected / Approved with comment */}
       {report.review_comments && (
-        <div className={`p-5 rounded-2xl border ${
-          report.status === 'Rejected' 
-            ? 'bg-rose-50 border-rose-200 text-rose-900' 
+        <div className={`p-5 rounded-2xl border ${report.status === 'Rejected'
+            ? 'bg-rose-50 border-rose-200 text-rose-900'
             : 'bg-emerald-50 border-emerald-200 text-emerald-900'
-        }`}>
+          }`}>
           <div className="flex items-center gap-2 font-bold text-sm mb-1">
             <MessageSquare className="h-4 w-4" />
             <span>HOD Review Feedback ({report.reviewer_name || 'Department Head'})</span>
@@ -275,11 +274,10 @@ export const ReportPreview: React.FC<ReportPreviewProps> = ({ reportId, onBack, 
             <button
               key={tab.id}
               onClick={() => setActiveTab(tab.id as any)}
-              className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs font-bold whitespace-nowrap transition-all ${
-                isActive 
-                  ? 'bg-blue-600 text-white shadow-md shadow-blue-900/20' 
+              className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs font-bold whitespace-nowrap transition-all ${isActive
+                  ? 'bg-blue-600 text-white shadow-md shadow-blue-900/20'
                   : 'text-slate-600 hover:bg-slate-100'
-              }`}
+                }`}
             >
               <Icon className="h-4 w-4" />
               <span>{tab.label}</span>
@@ -290,7 +288,7 @@ export const ReportPreview: React.FC<ReportPreviewProps> = ({ reportId, onBack, 
 
       {/* Tab Content Display */}
       <div className="bg-white border border-slate-200/80 rounded-3xl p-6 shadow-sm space-y-6">
-        
+
         {/* TAB 1: OVERVIEW */}
         {activeTab === 'overview' && (
           <div className="space-y-6">
@@ -358,7 +356,11 @@ export const ReportPreview: React.FC<ReportPreviewProps> = ({ reportId, onBack, 
                       {report.teaching_activities.map((t, idx) => (
                         <tr key={idx} className="hover:bg-slate-50">
                           <td className="p-3 font-bold text-slate-900">{t.subject_name}</td>
-                          <td className="p-3 font-semibold text-slate-600">{t.class_assigned}</td>
+                          <td className="p-3 font-semibold text-slate-600">
+                            {t.class_assigned && t.class_assigned.includes(' | ')
+                              ? `${t.class_assigned.split(' | ')[1]} - ${t.class_assigned.split(' | ')[2]} (${t.class_assigned.split(' | ')[0]})`
+                              : t.class_assigned}
+                          </td>
                           <td className="p-3 font-bold text-blue-600">{t.classes_taken}</td>
                           <td className="p-3 font-semibold">{t.teaching_hours}</td>
                           <td className="p-3 font-extrabold text-emerald-600">{t.syllabus_pct}%</td>

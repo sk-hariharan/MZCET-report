@@ -200,7 +200,9 @@ export async function generateDocx(report) {
   const teachingHeaders = ['Subject Handled', 'Class Assigned', 'Taken/Resch/Cancel', 'Teaching Hours', 'Syllabus Comp. %', 'Lesson Plan Status'];
   const teachingRows = (report.teaching_activities || []).map(t => [
     t.subject_name,
-    t.class_assigned,
+    t.class_assigned && t.class_assigned.includes(' | ')
+      ? `${t.class_assigned.split(' | ')[1]} - ${t.class_assigned.split(' | ')[2]} (${t.class_assigned.split(' | ')[0]})`
+      : t.class_assigned || '—',
     `${t.classes_taken || 0} / ${t.classes_rescheduled || 0} / ${t.classes_cancelled || 0}`,
     t.teaching_hours,
     `${t.syllabus_pct || 0}%`,
