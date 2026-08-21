@@ -143,36 +143,50 @@ const MainLayout: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen bg-slate-100 flex">
+    <div className="min-h-screen bg-slate-100 flex min-w-0 overflow-x-hidden">
       
-      {/* Desktop Sidebar */}
-      <Sidebar currentTab={currentTab} setCurrentTab={(tab) => { setPreviewReportId(null); setCurrentTab(tab); }} />
+      {/* Sidebar Navigation */}
+      <Sidebar 
+        currentTab={currentTab} 
+        setCurrentTab={(tab) => { setPreviewReportId(null); setCurrentTab(tab); }} 
+        mobileMenuOpen={mobileMenuOpen}
+        setMobileMenuOpen={setMobileMenuOpen}
+      />
 
       {/* Main Content Area */}
-      <div className="flex-1 ml-64 flex flex-col min-h-screen">
+      <div className="flex-1 md:ml-64 flex flex-col min-h-screen min-w-0 w-full">
         
         {/* Top Navbar */}
-        <header className="h-16 bg-white border-b border-slate-200 sticky top-0 z-10 px-8 flex items-center justify-between shadow-xs">
-          <div className="flex items-center gap-3">
-            <img src="/mzcet-logo.png" alt="Mount Zion Logo" className="h-9 w-auto object-contain" />
-            <div className="font-extrabold text-slate-800 text-sm flex items-center gap-2">
-              <span className="text-blue-700">Mount Zion College of Engineering and Technology</span>
+        <header className="h-16 bg-white border-b border-slate-200 sticky top-0 z-10 px-4 md:px-8 flex items-center justify-between shadow-xs">
+          <div className="flex items-center gap-2.5 min-w-0">
+            <button 
+              onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+              className="md:hidden p-2 rounded-xl text-slate-600 hover:bg-slate-100 border border-slate-200 flex-shrink-0"
+              aria-label="Toggle menu"
+            >
+              {mobileMenuOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
+            </button>
+
+            <img src="/mzcet-logo.png" alt="Mount Zion Logo" className="h-8 w-auto object-contain flex-shrink-0" />
+            <div className="font-extrabold text-slate-800 text-xs sm:text-sm flex items-center gap-1.5 min-w-0 truncate">
+              <span className="text-blue-700 truncate hidden sm:inline">Mount Zion College of Engineering and Technology</span>
+              <span className="text-blue-700 truncate sm:hidden">MZCET</span>
               <span className="text-slate-300">/</span>
-              <span className="text-slate-500 font-semibold capitalize">{currentTab.replace('_', ' ')}</span>
+              <span className="text-slate-500 font-semibold capitalize truncate">{currentTab.replace('_', ' ')}</span>
             </div>
           </div>
 
-          <div className="flex items-center gap-4">
+          <div className="flex items-center gap-3 flex-shrink-0">
             <div className="hidden sm:flex items-center gap-2 text-xs font-bold text-slate-600 bg-slate-100 px-3 py-1.5 rounded-xl border border-slate-200">
               <Calendar className="h-3.5 w-3.5 text-blue-600" />
-              <span>AY 2025-2026 (ODD)</span>
+              <span>AY 2025-2026</span>
             </div>
 
-            <div className="flex items-center gap-2.5 pl-3 border-l border-slate-200">
-              <div className="h-8 w-8 rounded-xl bg-gradient-to-tr from-blue-700 to-indigo-600 flex items-center justify-center font-black text-white text-xs shadow-inner">
+            <div className="flex items-center gap-2.5 pl-2.5 border-l border-slate-200">
+              <div className="h-8 w-8 rounded-xl bg-gradient-to-tr from-blue-700 to-indigo-600 flex items-center justify-center font-black text-white text-xs shadow-inner flex-shrink-0">
                 {user.name?.charAt(0) || 'U'}
               </div>
-              <div className="hidden md:block text-left">
+              <div className="hidden lg:block text-left">
                 <p className="text-xs font-bold text-slate-800 leading-tight">{user.name}</p>
                 <p className="text-[10px] text-slate-400 font-semibold uppercase">{user.role}</p>
               </div>
@@ -181,12 +195,12 @@ const MainLayout: React.FC = () => {
         </header>
 
         {/* Dynamic Page Container */}
-        <main className="flex-1 p-8 max-w-7xl w-full mx-auto">
+        <main className="flex-1 p-4 sm:p-6 md:p-8 max-w-7xl w-full mx-auto min-w-0">
           {renderContent()}
         </main>
 
         {/* Global Footer */}
-        <footer className="py-4 px-8 border-t border-slate-200/80 bg-white text-center text-xs text-slate-400 font-semibold">
+        <footer className="py-4 px-4 md:px-8 border-t border-slate-200/80 bg-white text-center text-[11px] sm:text-xs text-slate-400 font-semibold">
           Mount Zion College of Engineering & Technology — Staff Weekly & Monthly Report Automation System © 2026
         </footer>
       </div>
