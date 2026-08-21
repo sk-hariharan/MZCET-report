@@ -100,6 +100,7 @@ export interface CourseItem {
   code: string;
   name: string;
   full: string;
+  type: string;
 }
 
 export const DEPARTMENTS = [
@@ -113,58 +114,64 @@ export const DEPARTMENTS = [
 
 export const YEARS = ['I YEAR', 'II YEAR', 'III YEAR', 'IV YEAR'];
 
-const SUBJECT_TEMPLATES: { [key: string]: { code: string, name: string }[] } = {
+const SUBJECT_TEMPLATES: { [key: string]: { code: string, name: string, type: string }[] } = {
   'I YEAR_Semester 1': [
-    { code: 'MA3151', name: 'Matrices and Calculus' },
-    { code: 'PH3151', name: 'Engineering Physics' },
-    { code: 'CY3151', name: 'Engineering Chemistry' },
-    { code: 'GE3151', name: 'Problem Solving and Python Programming' },
-    { code: 'HS3152', name: 'Heritage of Tamils' }
+    { code: 'MA3151', name: 'Matrices and Calculus', type: 'Theory' },
+    { code: 'PH3151', name: 'Engineering Physics', type: 'Theory' },
+    { code: 'CY3151', name: 'Engineering Chemistry', type: 'Theory' },
+    { code: 'GE3151', name: 'Problem Solving and Python Programming', type: 'Theory' },
+    { code: 'HS3152', name: 'Heritage of Tamils', type: 'Theory' }
   ],
   'I YEAR_Semester 2': [
-    { code: 'HS3252', name: 'Professional English – II' },
-    { code: 'MA3251', name: 'Statistics and Numerical Methods' },
-    { code: 'PH3256', name: 'Physics for Information Science' },
-    { code: 'BE3251', name: 'Basic Electrical and Electronics Engineering' },
-    { code: 'CS3251', name: 'Programming in C' }
+    { code: 'HS3252', name: 'Professional English – II', type: 'Theory' },
+    { code: 'MA3251', name: 'Statistics and Numerical Methods', type: 'Theory' },
+    { code: 'PH3256', name: 'Physics for Information Science', type: 'Theory' },
+    { code: 'BE3251', name: 'Basic Electrical and Electronics Engineering', type: 'Theory' },
+    { code: 'CS3251', name: 'Programming in C', type: 'Theory' }
   ],
   'II YEAR_Semester 3': [
-    { code: 'MA3354', name: 'Discrete Mathematics' },
-    { code: 'CS3351', name: 'Digital Principles and Computer Organization' },
-    { code: 'CS3352', name: 'Foundations of Data Science' },
-    { code: 'CS3391', name: 'Object Oriented Programming' },
-    { code: 'CS3291', name: 'Data Structures and Algorithms' }
+    { code: 'MA3354', name: 'Discrete Mathematics', type: 'Theory' },
+    { code: 'CS3351', name: 'Digital Principles and Computer Organization', type: 'Integrated' },
+    { code: 'CS3352', name: 'Foundations of Data Science', type: 'Theory' },
+    { code: 'CS3391', name: 'Object Oriented Programming', type: 'Theory' },
+    { code: 'CS3291', name: 'Data Structures and Algorithms', type: 'Theory' }
   ],
   'II YEAR_Semester 4': [
-    { code: 'CS3452', name: 'Theory of Computation' },
-    { code: 'CS3491', name: 'Artificial Intelligence and Machine Learning' },
-    { code: 'CS3492', name: 'Database Management Systems' },
-    { code: 'CS3451', name: 'Introduction to Operating Systems' },
-    { code: 'GE3451', name: 'Environmental Sciences and Sustainability' }
+    { code: 'CS3452', name: 'Theory of Computation', type: 'Theory' },
+    { code: 'CS3491', name: 'Artificial Intelligence and Machine Learning', type: 'Integrated' },
+    { code: 'CS3492', name: 'Database Management Systems', type: 'Theory' },
+    { code: 'CS3451', name: 'Introduction to Operating Systems', type: 'Theory' },
+    { code: 'GE3451', name: 'Environmental Sciences and Sustainability', type: 'Theory' },
+    { code: 'CS3481', name: 'Operating Systems Laboratory', type: 'Practical' },
+    { code: 'CS3482', name: 'Database Management Systems Laboratory', type: 'Practical' },
+    { code: 'IT3401', name: 'Web Essentials', type: 'Integrated' }
   ],
   'III YEAR_Semester 5': [
-    { code: 'CS3591', name: 'Computer Networks (T+L)' },
-    { code: 'CS3551', name: 'Distributed Computing' },
-    { code: 'CS3691', name: 'Embedded Systems and IoT (T+L)' },
-    { code: 'IT3501', name: 'Full Stack Web Development' },
-    { code: 'IT3511', name: 'Full Stack Web Development Laboratory' }
+    { code: 'CS3591', name: 'Computer Networks (T+L)', type: 'Integrated' },
+    { code: 'CS3551', name: 'Distributed Computing', type: 'Theory' },
+    { code: 'CS3691', name: 'Embedded Systems and IoT (T+L)', type: 'Integrated' },
+    { code: 'IT3501', name: 'Full Stack Web Development', type: 'Theory' },
+    { code: 'IT3511', name: 'Full Stack Web Development Laboratory', type: 'Practical' },
+    { code: 'MX3084', name: 'Disaster Risk Reduction and Management', type: 'Theory' },
+    { code: 'CCS361', name: 'Robotic Process Automation (T+L)', type: 'Integrated' },
+    { code: 'CCS335', name: 'Cloud Computing (T+L)', type: 'Integrated' }
   ],
   'III YEAR_Semester 6': [
-    { code: 'CS3692', name: 'Software Engineering and Agile Methodologies' },
-    { code: 'IT3601', name: 'Mobile Communication and Application Development' },
-    { code: 'CCS343', name: 'Mobile Application Development Laboratory' },
-    { code: 'CCS356', name: 'Software Testing and Quality Assurance' }
+    { code: 'CS3692', name: 'Software Engineering and Agile Methodologies', type: 'Theory' },
+    { code: 'IT3601', name: 'Mobile Communication and Application Development', type: 'Theory' },
+    { code: 'CCS343', name: 'Mobile Application Development Laboratory', type: 'Practical' },
+    { code: 'CCS356', name: 'Software Testing and Quality Assurance', type: 'Theory' }
   ],
   'IV YEAR_Semester 7': [
-    { code: 'GE3791', name: 'Human Values and Ethics' },
-    { code: 'GE3751', name: 'Principles of Management' },
-    { code: 'AI3021', name: 'OE 2 IT in Agriculture System' },
-    { code: 'IT3701', name: 'Advanced Web Technology' }
+    { code: 'GE3791', name: 'Human Values and Ethics', type: 'Theory' },
+    { code: 'GE3751', name: 'Principles of Management', type: 'Theory' },
+    { code: 'AI3021', name: 'OE 2 IT in Agriculture System', type: 'Theory' },
+    { code: 'IT3701', name: 'Advanced Web Technology', type: 'Theory' }
   ],
   'IV YEAR_Semester 8': [
-    { code: 'IT3811', name: 'Project Work Phase II' },
-    { code: 'OME354', name: 'OE 3 Applied Design Thinking' },
-    { code: 'CRA332', name: 'OE 4 Drone Technologies' }
+    { code: 'IT3811', name: 'Project Work Phase II', type: 'Practical' },
+    { code: 'OME354', name: 'OE 3 Applied Design Thinking', type: 'Theory' },
+    { code: 'CRA332', name: 'OE 4 Drone Technologies', type: 'Theory' }
   ]
 };
 
@@ -229,7 +236,8 @@ DEPARTMENTS.forEach(dept => {
           semester: sem,
           code,
           name,
-          full: `${code} - ${name}`
+          full: `${code} - ${name}`,
+          type: t.type
         });
       });
     });

@@ -81,6 +81,18 @@ const parseClassAssigned = (classAssigned: string = '', subjectName: string = ''
   return { department, year, semester };
 };
 
+const isCourseTypeMatching = (courseType: string = '', entryType: string = '') => {
+  const normCourseType = (courseType || '').trim().toLowerCase();
+  const normEntryType = (entryType || '').trim().toLowerCase();
+
+  if (normEntryType === 'laboratory') {
+    return normCourseType === 'practical' || normCourseType === 'integrated';
+  } else {
+    // Theory mode
+    return normCourseType === 'theory' || normCourseType === 'integrated';
+  }
+};
+
 export const MultiStepReportForm = ({ reportType, onCancel, editReportId = null }) => {
   const { token, user, apiBaseUrl } = useAuth();
   const [currentStep, setCurrentStep] = useState(1);
@@ -553,9 +565,23 @@ export const MultiStepReportForm = ({ reportType, onCancel, editReportId = null 
                     <Trash2 className="h-5 w-5" />
                   </button>
                   <div className="flex items-center gap-2">
-                    <span className={`px-2.5 py-1 text-[10px] font-black rounded-lg uppercase ${t.course_type === 'Laboratory' ? 'bg-indigo-100 text-indigo-700' : 'bg-blue-100 text-blue-700'}`}>
-                      {t.course_type || 'Theory'}
-                    </span>
+                    <select
+                      className={`text-[10px] font-black rounded-lg uppercase px-2 py-0.5 border border-slate-200 outline-none cursor-pointer focus:ring-0 ${(t.course_type || 'Theory').toLowerCase() === 'laboratory'
+                          ? 'bg-indigo-100 text-indigo-700'
+                          : 'bg-blue-100 text-blue-700'
+                        }`}
+                      value={t.course_type || 'Theory'}
+                      onChange={e => {
+                        const val = e.target.value;
+                        const updated = [...teaching];
+                        updated[idx].course_type = val;
+                        updated[idx].subject_name = ''; // Reset selected course when Entry Type changes
+                        setTeaching(updated);
+                      }}
+                    >
+                      <option value="Theory" className="bg-white text-slate-800 font-semibold normal-case">Theory</option>
+                      <option value="Laboratory" className="bg-white text-slate-800 font-semibold normal-case">Laboratory</option>
+                    </select>
                     <h4 className="font-bold text-slate-800 text-sm">Course Entry #{idx + 1}</h4>
                   </div>
 
@@ -652,7 +678,12 @@ export const MultiStepReportForm = ({ reportType, onCancel, editReportId = null 
                       <label className="text-xs font-bold text-slate-500 uppercase mb-1 block animate-none">Sub. Code & Name <span className="text-red-500">*</span></label>
                       <select
                         className="w-full border p-2.5 rounded-xl text-slate-800 font-semibold outline-none bg-white"
-                        value={COURSES_DATA.some(s => s.full === t.subject_name) ? t.subject_name : (t.subject_name ? 'CUSTOM' : '')}
+                        value={COURSES_DATA.filter(course =>
+                          course.department.toUpperCase() === (t.department || '').toUpperCase() &&
+                          course.year.toUpperCase() === (t.year || '').toUpperCase() &&
+                          course.semester.toUpperCase() === (t.semester || '').toUpperCase() &&
+                          isCourseTypeMatching(course.type, t.course_type)
+                        ).some(s => s.full === t.subject_name) ? t.subject_name : (t.subject_name ? 'CUSTOM' : '')}
                         disabled={!t.department || !t.year || !t.semester}
                         onChange={e => {
                           const val = e.target.value;
@@ -669,22 +700,28 @@ export const MultiStepReportForm = ({ reportType, onCancel, editReportId = null 
                         {COURSES_DATA.filter(course =>
                           course.department.toUpperCase() === (t.department || '').toUpperCase() &&
                           course.year.toUpperCase() === (t.year || '').toUpperCase() &&
-                          course.semester.toUpperCase() === (t.semester || '').toUpperCase()
+                          course.semester.toUpperCase() === (t.semester || '').toUpperCase() &&
+                          isCourseTypeMatching(course.type, t.course_type)
                         ).map((course, cIdx) => (
                           <option key={cIdx} value={course.full}>{course.full}</option>
                         ))}
                         <option value="CUSTOM">✏️ Custom Course Name</option>
                       </select>
 
-                      {(!t.subject_name || !COURSES_DATA.some(s => s.full === t.subject_name)) && (
-                        <input type="text" className="w-full border p-2.5 rounded-xl text-slate-800 mt-2 bg-blue-50/50" placeholder="Type custom course code & name..."
-                          value={t.subject_name || ''} onChange={e => {
-                            const updated = [...teaching];
-                            updated[idx].subject_name = e.target.value;
-                            setTeaching(updated);
-                          }}
-                        />
-                      )}
+                      {(!t.subject_name || !COURSES_DATA.filter(course =>
+                        course.department.toUpperCase() === (t.department || '').toUpperCase() &&
+                        course.year.toUpperCase() === (t.year || '').toUpperCase() &&
+                        course.semester.toUpperCase() === (t.semester || '').toUpperCase() &&
+                        isCourseTypeMatching(course.type, t.course_type)
+                      ).some(s => s.full === t.subject_name)) && (
+                          <input type="text" className="w-full border p-2.5 rounded-xl text-slate-800 mt-2 bg-blue-50/50" placeholder="Type custom course code & name..."
+                            value={t.subject_name || ''} onChange={e => {
+                              const updated = [...teaching];
+                              updated[idx].subject_name = e.target.value;
+                              setTeaching(updated);
+                            }}
+                          />
+                        )}
                     </div>
 
                     <div>
@@ -1387,10 +1424,10 @@ export const MultiStepReportForm = ({ reportType, onCancel, editReportId = null 
                 type="button"
                 onClick={() => setCurrentStep(stepNum)}
                 className={`flex-1 text-center py-2 px-1 rounded-xl transition-all flex flex-col items-center ${isActive
-                    ? 'bg-blue-600 text-white shadow-md font-extrabold'
-                    : isCompleted
-                      ? 'bg-blue-50 text-blue-700 font-bold hover:bg-blue-100'
-                      : 'text-slate-500 hover:bg-slate-50 font-semibold'
+                  ? 'bg-blue-600 text-white shadow-md font-extrabold'
+                  : isCompleted
+                    ? 'bg-blue-50 text-blue-700 font-bold hover:bg-blue-100'
+                    : 'text-slate-500 hover:bg-slate-50 font-semibold'
                   }`}
               >
                 <span className="text-[10px] opacity-80 uppercase tracking-wider">Step {stepNum}</span>
