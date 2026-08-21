@@ -1,11 +1,12 @@
 import React, { useState } from 'react';
 import { useAuth } from '../context/AuthContext';
-import { GraduationCap, AlertCircle, KeyRound, Mail, ShieldAlert } from 'lucide-react';
+import { GraduationCap, AlertCircle, KeyRound, Mail, ShieldAlert, Eye, EyeOff } from 'lucide-react';
 
 export const Login: React.FC = () => {
   const { login } = useAuth();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -102,7 +103,7 @@ export const Login: React.FC = () => {
                   value={email}
                   onChange={e => setEmail(e.target.value)}
                   className="w-full bg-slate-950/70 border border-slate-700/80 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 pl-10 pr-4 py-3 rounded-xl text-sm text-slate-100 placeholder-slate-500 outline-none transition-all font-medium"
-                  placeholder="e.g. mzcet@admin or mzcet@it_coordinator"
+                  placeholder="Enter login ID or email address"
                   required
                 />
               </div>
@@ -115,13 +116,21 @@ export const Login: React.FC = () => {
                   <KeyRound className="h-4.5 w-4.5" />
                 </span>
                 <input 
-                  type="password"
+                  type={showPassword ? "text" : "password"}
                   value={password}
                   onChange={e => setPassword(e.target.value)}
-                  className="w-full bg-slate-950/70 border border-slate-700/80 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 pl-10 pr-4 py-3 rounded-xl text-sm text-slate-100 placeholder-slate-500 outline-none transition-all"
-                  placeholder="••••••••"
+                  className="w-full bg-slate-950/70 border border-slate-700/80 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 pl-10 pr-11 py-3 rounded-xl text-sm text-slate-100 placeholder-slate-500 outline-none transition-all"
+                  placeholder="Enter password"
                   required
                 />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword(!showPassword)}
+                  className="absolute inset-y-0 right-0 pr-3.5 flex items-center text-slate-400 hover:text-slate-200 transition-colors"
+                  title={showPassword ? "Hide password" : "Show password"}
+                >
+                  {showPassword ? <EyeOff className="h-4.5 w-4.5" /> : <Eye className="h-4.5 w-4.5" />}
+                </button>
               </div>
             </div>
 
