@@ -259,21 +259,21 @@ export const CLASS_ASSIGNED_OPTIONS = [
 ];
 
 export const WORK_PLAN_DEFAULT_ITEMS = [
-  { sno: 1, particulars: 'Certificate / VAC course', requirement: 'Min. 1 per Semester (UG & PG)', conducted: '0', to_be_conducted: '1 per class' },
-  { sno: 2, particulars: 'Participation in certificate course', requirement: 'Above 50%', conducted: 'Ongoing', to_be_conducted: 'Target >50%' },
-  { sno: 3, particulars: 'Participation in internship', requirement: 'Above 50%', conducted: 'Ongoing', to_be_conducted: 'Target >50%' },
-  { sno: 4, particulars: 'Participation in IPT', requirement: 'Above 65%', conducted: 'Ongoing', to_be_conducted: 'Target >65%' },
-  { sno: 5, particulars: 'Industrial visit', requirement: 'Min. 1 per ACY (I & II Year only)', conducted: '0', to_be_conducted: 'Planned' },
-  { sno: 6, particulars: 'Student centric activities (Webinar/Workshop/Hands-on)', requirement: 'Min. 1 activity per month (each subject)', conducted: 'Conducted', to_be_conducted: '1 per subject' },
-  { sno: 7, particulars: '24 hours workshop', requirement: '3 per semester (UG), 1 per sem (PG)', conducted: '1 Conducted', to_be_conducted: '2 Planned' },
-  { sno: 8, particulars: 'Symposium / Conference', requirement: 'Min. 1 per ACY', conducted: '0', to_be_conducted: 'Planned' },
-  { sno: 9, particulars: 'Project expo', requirement: 'Min. 1 per ACY', conducted: '0', to_be_conducted: 'Planned' },
-  { sno: 10, particulars: 'Technical competitions (Quiz/Paper Presentation)', requirement: 'Min. 5 per semester', conducted: 'Conducted', to_be_conducted: '5 Planned' },
-  { sno: 11, particulars: 'Exam results (Internal & External)', requirement: '75% per dept, 85% per subject, 4 rank holders', conducted: 'On Track', to_be_conducted: 'Target 75%+' },
-  { sno: 12, particulars: 'Publication (Journal & Conference)', requirement: 'Min. 1 per Sem / Faculty', conducted: 'In Progress', to_be_conducted: '1 Journal, 1 Conf' },
-  { sno: 13, particulars: 'MoU with industry', requirement: 'Min. 2 (New MoUs), 2 activities per MoU', conducted: 'Active', to_be_conducted: '2 Activities' },
-  { sno: 14, particulars: 'Placement', requirement: 'Above 80%', conducted: 'On Track', to_be_conducted: 'Target >80%' },
-  { sno: 15, particulars: 'Staff participation (Workshop/FDP)', requirement: 'Min. 2 per ACY by each faculty (>5 days)', conducted: '2/2 Completed', to_be_conducted: 'Planned' },
-  { sno: 16, particulars: 'NPTEL courses', requirement: 'One per faculty / 3 students per mentor', conducted: 'Active (Faculty: 4)', to_be_conducted: 'Mentor assigned' },
-  { sno: 17, particulars: 'Students participation in events in reputed institutions', requirement: '10 per class per semester', conducted: 'Active', to_be_conducted: '10 per class' }
+  { sno: 1, particulars: 'Certificate / VAC course', requirement: 'Min. 1 per Semester (UG & PG)', conducted: '', to_be_conducted: '' },
+  { sno: 2, particulars: 'Participation in certificate course', requirement: 'Above 50%', conducted: '', to_be_conducted: '' },
+  { sno: 3, particulars: 'Participation in internship', requirement: 'Above 50%', conducted: '', to_be_conducted: '' },
+  { sno: 4, particulars: 'Participation in IPT', requirement: 'Above 65%', conducted: '', to_be_conducted: '' },
+  { sno: 5, particulars: 'Industrial visit', requirement: 'Min. 1 per ACY (I & II Year only)', conducted: '', to_be_conducted: '' },
+  { sno: 6, particulars: 'Student centric activities (Webinar/Workshop/Hands-on)', requirement: 'Min. 1 activity per month (each subject)', conducted: '', to_be_conducted: '' },
+  { sno: 7, particulars: '24 hours workshop', requirement: '3 per semester (UG), 1 per sem (PG)', conducted: '', to_be_conducted: '' },
+  { sno: 8, particulars: 'Symposium / Conference', requirement: 'Min. 1 per ACY', conducted: '', to_be_conducted: '' },
+  { sno: 9, particulars: 'Project expo', requirement: 'Min. 1 per ACY', conducted: '', to_be_conducted: '' },
+  { sno: 10, particulars: 'Technical competitions (Quiz/Paper Presentation)', requirement: 'Min. 5 per semester', conducted: '', to_be_conducted: '' },
+  { sno: 11, particulars: 'Exam results (Internal & External)', requirement: '75% per dept, 85% per subject, 4 rank holders', conducted: '', to_be_conducted: '' },
+  { sno: 12, particulars: 'Publication (Journal & Conference)', requirement: 'Min. 1 per Sem / Faculty', conducted: '', to_be_conducted: '' },
+  { sno: 13, particulars: 'MoU with industry', requirement: 'Min. 2 (New MoUs), 2 activities per MoU', conducted: '', to_be_conducted: '' },
+  { sno: 14, particulars: 'Placement', requirement: 'Above 80%', conducted: '', to_be_conducted: '' },
+  { sno: 15, particulars: 'Staff participation (Workshop/FDP)', requirement: 'Min. 2 per ACY by each faculty (>5 days)', conducted: '', to_be_conducted: '' },
+  { sno: 16, particulars: 'NPTEL courses', requirement: 'One per faculty / 3 students per mentor', conducted: '', to_be_conducted: '' },
+  { sno: 17, particulars: 'Students participation in events in reputed institutions', requirement: '10 per class per semester', conducted: '', to_be_conducted: '' }
 ];

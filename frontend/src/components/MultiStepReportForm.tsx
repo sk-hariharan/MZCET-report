@@ -409,8 +409,8 @@ export const MultiStepReportForm = ({ reportType, onCancel, editReportId = null 
     const userDept = user?.department_name ? user.department_name.toUpperCase() : 'INFORMATION TECHNOLOGY';
     setTeaching(prev => [...prev, {
       subject_name: '', class_assigned: `${userDept} | II YEAR | Semester 3`, course_type: 'Theory',
-      instructor_name: user?.name || '', teaching_hours: 20, current_unit: 'Unit 1 & 2 Completed',
-      syllabus_pct: 40, exp_completed: '', exp_remaining: '',
+      instructor_name: user?.name || '', teaching_hours: 0, current_unit: '',
+      syllabus_pct: 0, exp_completed: '', exp_remaining: '',
       department: userDept,
       year: 'II YEAR',
       semester: 'Semester 3'
@@ -421,8 +421,8 @@ export const MultiStepReportForm = ({ reportType, onCancel, editReportId = null 
     const userDept = user?.department_name ? user.department_name.toUpperCase() : 'INFORMATION TECHNOLOGY';
     setTeaching(prev => [...prev, {
       subject_name: '', class_assigned: `${userDept} | II YEAR | Semester 3`, course_type: 'Laboratory',
-      instructor_name: user?.name || '', teaching_hours: 20, current_unit: '',
-      syllabus_pct: 50, exp_completed: 'EX: 6/15', exp_remaining: 'Ex: 8/15',
+      instructor_name: user?.name || '', teaching_hours: 0, current_unit: '',
+      syllabus_pct: 0, exp_completed: '', exp_remaining: '',
       department: userDept,
       year: 'II YEAR',
       semester: 'Semester 3'
@@ -431,33 +431,33 @@ export const MultiStepReportForm = ({ reportType, onCancel, editReportId = null 
 
   const addEventRow = () => {
     setEvents(prev => [...prev, {
-      event_date: '2026-07-15', event_name: 'WORKSHOP: Hands on networking',
-      students_participated: 'IV Year / 29 Students', role: user?.name || 'Mrs. L. Shalini',
-      description: 'Dr. P. Rajkumar, Resource Person'
+      event_date: new Date().toISOString().split('T')[0], event_name: '',
+      students_participated: '', role: user?.name || '',
+      description: ''
     }]);
   };
 
   const addFdpRow = () => {
     setFdp(prev => [...prev, {
-      program_type: 'FDP', program_title: 'AGENTIC AI SYSTEMS: From LLMs to Tiny Language Models',
-      organizing_institution: 'Kalasalingam Academy of Research and Education',
-      start_date: '2026-06-22 to 2026-06-26', mode: 'Offline', role: 'Participant'
+      program_type: 'FDP', program_title: '',
+      organizing_institution: '',
+      start_date: '', mode: 'Offline', role: 'Participant'
     }]);
   };
 
   const addFacultyNptelRow = () => {
     setFacultyNptel(prev => [...prev, {
-      faculty_name: user?.name || 'Mrs. R Saraswathi',
-      date_range: '20.07.2026 – 09.10.2026',
-      course_name: 'Computer Architecture and Organization',
+      faculty_name: user?.name || '',
+      date_range: '',
+      course_name: '',
       status: 'Registered'
     }]);
   };
 
   const addStudentNptelRow = () => {
     setStudentNptel(prev => [...prev, {
-      mentor_name: user?.name || 'Mrs A Arifa Banu',
-      student_name: '', year: 'III Year', course_name: 'Cloud Computing', status: 'Elite'
+      mentor_name: user?.name || '',
+      student_name: '', year: 'III Year', course_name: '', status: 'Registered'
     }]);
   };
 
@@ -1068,7 +1068,7 @@ export const MultiStepReportForm = ({ reportType, onCancel, editReportId = null 
             <div className="space-y-4">
               <div className="flex items-center justify-between">
                 <h4 className="font-extrabold text-sm text-slate-800 uppercase tracking-wider">E. Details of Academic Feedback - I</h4>
-                <button type="button" onClick={() => setFeedback(prev => [...prev, { year: 'III Year', date_day: '2026-07-20', submissions_total: '55/60', remarks: 'Full Stack Web Dev - 92%', action_taken: 'Continued active teaching' }])} className="flex items-center gap-1 bg-slate-800 hover:bg-slate-700 text-white text-xs font-bold py-1.5 px-3 rounded-xl">
+                <button type="button" onClick={() => setFeedback(prev => [...prev, { year: 'III Year', date_day: '', submissions_total: '', remarks: '', action_taken: '' }])} className="flex items-center gap-1 bg-slate-800 hover:bg-slate-700 text-white text-xs font-bold py-1.5 px-3 rounded-xl">
                   <Plus className="h-4 w-4" /> Add Feedback Record
                 </button>
               </div>
@@ -1126,7 +1126,7 @@ export const MultiStepReportForm = ({ reportType, onCancel, editReportId = null 
             <div className="space-y-4 pt-4 border-t">
               <div className="flex items-center justify-between">
                 <h4 className="font-extrabold text-sm text-slate-800 uppercase tracking-wider">F. Details of Class Committee Meeting (CCM)</h4>
-                <button type="button" onClick={() => setCcm(prev => [...prev, { year: 'II Year', date_day: '2026-07-22', discussion: 'Syllabus completion review and extra coaching', action_taken: 'Scheduled remedial classes' }])} className="flex items-center gap-1 bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold py-1.5 px-3 rounded-xl">
+                <button type="button" onClick={() => setCcm(prev => [...prev, { year: 'II Year', date_day: '', discussion: '', action_taken: '' }])} className="flex items-center gap-1 bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold py-1.5 px-3 rounded-xl">
                   <Plus className="h-4 w-4" /> Add CCM Record
                 </button>
               </div>
