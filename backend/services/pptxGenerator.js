@@ -3,14 +3,14 @@ import fs from 'fs';
 import path from 'path';
 
 // Helper: Try to read header logo image as Base64 for PPTX embedding
-function getHeaderLogoBase64() {
+function getLogoBase64(filename = 'pdf word top logo.png') {
   const logoPaths = [
-    'c:\\Users\\HARIHARAN S\\OneDrive\\Desktop\\Report-Automation\\frontend\\public\\pdf word top logo.png',
-    path.resolve('frontend/public/pdf word top logo.png'),
-    path.resolve('../frontend/public/pdf word top logo.png'),
-    path.resolve('public/pdf word top logo.png'),
-    path.resolve('mzcet-logo.png'),
-    path.resolve('../mzcet-logo.png')
+    'c:\\Users\\HARIHARAN S\\OneDrive\\Desktop\\Report-Automation\\frontend\\public\\' + filename,
+    'c:\\Users\\HARIHARAN S\\OneDrive\\Desktop\\Report-Automation\\' + filename,
+    path.resolve(`frontend/public/${filename}`),
+    path.resolve(`public/${filename}`),
+    path.resolve(filename),
+    path.resolve(`backend/${filename}`)
   ];
 
   for (const logoPath of logoPaths) {
@@ -20,7 +20,7 @@ function getHeaderLogoBase64() {
         const ext = path.extname(logoPath).toLowerCase() === '.png' ? 'png' : 'jpeg';
         return `data:image/${ext};base64,${fileBuffer.toString('base64')}`;
       } catch (err) {
-        console.error('Error reading logo for PPTX:', err);
+        console.error(`Error reading ${filename} for PPTX:`, err);
       }
     }
   }
@@ -28,7 +28,7 @@ function getHeaderLogoBase64() {
 }
 
 // Master slide setup helper for 16:9 widescreen (10.0 x 5.625 inches)
-function applySlideMaster(slide, title, logoBase64, departmentName = 'Information Technology') {
+function applySlideMaster(slide, title, departmentName = 'Information Technology') {
   slide.background = { fill: 'F8FAFC' };
 
   // Top header bar (navy blue) - Width: 10.0 in, Height: 0.75 in
@@ -39,17 +39,9 @@ function applySlideMaster(slide, title, logoBase64, departmentName = 'Informatio
 
   // Slide Title (White text in header)
   slide.addText(title, {
-    x: 0.4, y: 0.1, w: 6.2, h: 0.55,
+    x: 0.4, y: 0.1, w: 9.2, h: 0.55,
     color: 'FFFFFF', fontSize: 13, bold: true, align: 'left', wrap: true
   });
-
-  // College header logo in top right (fitted within 10.0 in slide width)
-  if (logoBase64) {
-    slide.addImage({
-      data: logoBase64,
-      x: 6.7, y: 0.05, w: 3.1, h: 0.65
-    });
-  }
 
   // Footer bar line
   slide.addShape('line', {
@@ -93,53 +85,80 @@ export async function generatePptx(summary, departmentName = 'Information Techno
   const pptx = new pptxgen();
   pptx.layout = 'LAYOUT_16x9'; // 10.0 in x 5.625 in
 
-  const logoBase64 = getHeaderLogoBase64();
-
   // ==========================================
   // SLIDE 1: Title Slide (Fitted for 10.0 x 5.625 inches)
   // ==========================================
   const slide1 = pptx.addSlide();
   slide1.background = { fill: 'F8FAFC' };
 
-  // Top header logo banner card (Centered)
-  if (logoBase64) {
+  // Top Accent Strip
+  slide1.addShape('rect', {
+    x: 0, y: 0, w: 10.0, h: 0.1,
+    fill: '1E3A8A'
+  });
+
+  // College Header Logo Banner (Centered Top)
+  const topLogo = getLogoBase64('pdf word top logo.png') || getLogoBase64('mzcet-logo.png');
+  if (topLogo) {
     slide1.addImage({
-      data: logoBase64,
-      x: 0.75, y: 0.3, w: 8.5, h: 1.05
+      data: topLogo,
+      x: 1.0, y: 0.25, w: 8.0, h: 0.95
     });
   }
 
-  // Decorative blue separator line
-  slide1.addShape('line', {
-    x: 0.75, y: 1.45, w: 8.5, h: 0,
-    line: { color: '1E3A8A', width: 1.5 }
-  });
-
-  // Main Title Box
-  slide1.addText('MOUNT ZION COLLEGE OF ENGINEERING AND TECHNOLOGY', {
-    x: 0.5, y: 1.65, w: 9.0, h: 0.45,
-    color: '1E3A8A', fontSize: 16, bold: true, align: 'center', wrap: true
-  });
-
-  slide1.addText('MONTHLY REPORT – ACADEMIC YEAR 2026 – 27 (ODD SEMESTER)', {
-    x: 0.5, y: 2.15, w: 9.0, h: 0.4,
-    color: '0F172A', fontSize: 13, bold: true, align: 'center', wrap: true
-  });
-
-  // Information Card Container
+  // Separator Line
   slide1.addShape('rect', {
-    x: 1.5, y: 2.75, w: 7.0, h: 1.9,
+    x: 0.75, y: 1.3, w: 8.5, h: 0.03,
+    fill: '1E3A8A'
+  });
+
+  // Document Title Hero Card (Navy Blue background)
+  slide1.addShape('rect', {
+    x: 0.75, y: 1.45, w: 8.5, h: 1.15,
+    fill: '1E3A8A', line: { color: '1D4ED8', width: 1 }
+  });
+
+  slide1.addText('MONTHLY PERFORMANCE & ACADEMIC REPORT', {
+    x: 0.85, y: 1.58, w: 8.3, h: 0.45,
+    color: 'FFFFFF', fontSize: 17, bold: true, align: 'center', wrap: true
+  });
+
+  slide1.addText('ACADEMIC YEAR 2026 – 2027 (ODD SEMESTER)', {
+    x: 0.85, y: 2.1, w: 8.3, h: 0.35,
+    color: '93C5FD', fontSize: 12, bold: true, align: 'center'
+  });
+
+  // Information Card Container (White Box with Navy Left Accent Border)
+  slide1.addShape('rect', {
+    x: 1.2, y: 2.8, w: 7.6, h: 2.1,
     fill: 'FFFFFF', line: { color: 'CBD5E1', width: 1 }
   });
 
-  slide1.addText(`Name of the Department : ${departmentName}\nReporting Period Date : 06.07.2026 to 07.08.2026\nAcademic Year : 2026 – 2027 (Odd Semester)`, {
-    x: 1.6, y: 2.85, w: 6.8, h: 1.7,
-    color: '1E293B', fontSize: 11, align: 'center', lineSpacing: 20
+  slide1.addShape('rect', {
+    x: 1.2, y: 2.8, w: 0.15, h: 2.1,
+    fill: '1E3A8A'
+  });
+
+  slide1.addText([
+    { text: 'Name of the Department : ', options: { bold: true, color: '1E3A8A', fontSize: 11.5 } },
+    { text: `${departmentName}\n\n`, options: { bold: true, color: '0F172A', fontSize: 11.5 } },
+    { text: 'Reporting Period Date   : ', options: { bold: true, color: '1E3A8A', fontSize: 11.5 } },
+    { text: '06.07.2026 to 07.08.2026\n\n', options: { color: '334155', fontSize: 11.5 } },
+    { text: 'Institution Status            : ', options: { bold: true, color: '1E3A8A', fontSize: 11.5 } },
+    { text: 'Autonomous Institution (NAAC A+ Grade)', options: { color: '334155', fontSize: 11.5 } }
+  ], {
+    x: 1.55, y: 2.98, w: 7.0, h: 1.7,
+    align: 'left', lineSpacing: 18
   });
 
   // Bottom Footer
+  slide1.addShape('line', {
+    x: 0.5, y: 5.15, w: 9.0, h: 0,
+    line: { color: 'CBD5E1', width: 1 }
+  });
+
   slide1.addText('Mount Zion College of Engineering and Technology — Autonomous Institution', {
-    x: 0.5, y: 5.05, w: 9.0, h: 0.3,
+    x: 0.5, y: 5.25, w: 9.0, h: 0.3,
     fontSize: 8.5, color: '64748B', align: 'center'
   });
 
@@ -147,7 +166,7 @@ export async function generatePptx(summary, departmentName = 'Information Techno
   // SLIDE 2: Section A - II Year Theory & Lab
   // ==========================================
   const slide2 = pptx.addSlide();
-  applySlideMaster(slide2, 'A. Syllabus Completion — II YEAR (Theory & Lab)', logoBase64, departmentName);
+  applySlideMaster(slide2, 'A. Syllabus Completion — II YEAR (Theory & Lab)', departmentName);
   
   let iiRows = [];
   if (summary?.teaching_activities && Array.isArray(summary.teaching_activities) && summary.teaching_activities.length > 0) {
@@ -179,7 +198,7 @@ export async function generatePptx(summary, departmentName = 'Information Techno
   // SLIDE 3: Section A - III Year Theory & Lab
   // ==========================================
   const slide3 = pptx.addSlide();
-  applySlideMaster(slide3, 'A. Syllabus Completion — III YEAR (Theory & Lab)', logoBase64, departmentName);
+  applySlideMaster(slide3, 'A. Syllabus Completion — III YEAR (Theory & Lab)', departmentName);
   
   let iiiRows = [];
   if (summary?.teaching_activities && Array.isArray(summary.teaching_activities) && summary.teaching_activities.length > 0) {
@@ -210,7 +229,7 @@ export async function generatePptx(summary, departmentName = 'Information Techno
   // SLIDE 4: Section A - IV Year Theory
   // ==========================================
   const slide4 = pptx.addSlide();
-  applySlideMaster(slide4, 'A. Syllabus Completion — IV YEAR (Theory)', logoBase64, departmentName);
+  applySlideMaster(slide4, 'A. Syllabus Completion — IV YEAR (Theory)', departmentName);
   
   let ivRows = [];
   if (summary?.teaching_activities && Array.isArray(summary.teaching_activities) && summary.teaching_activities.length > 0) {
@@ -238,7 +257,7 @@ export async function generatePptx(summary, departmentName = 'Information Techno
   // SLIDE 5: Section B - Events Organised
   // ==========================================
   const slide5 = pptx.addSlide();
-  applySlideMaster(slide5, 'B. Details of Events Organised', logoBase64, departmentName);
+  applySlideMaster(slide5, 'B. Details of Events Organised', departmentName);
   
   let bRows = [];
   if (summary?.events && Array.isArray(summary.events) && summary.events.length > 0) {
@@ -267,7 +286,7 @@ export async function generatePptx(summary, departmentName = 'Information Techno
   // SLIDE 6: Section C - Faculty Participation
   // ==========================================
   const slide6 = pptx.addSlide();
-  applySlideMaster(slide6, 'C. Details of Faculty Participation (FDP & NPTEL)', logoBase64, departmentName);
+  applySlideMaster(slide6, 'C. Details of Faculty Participation (FDP & NPTEL)', departmentName);
   
   let cRows = [];
   if (summary?.fdp_training && Array.isArray(summary.fdp_training) && summary.fdp_training.length > 0) {
@@ -298,7 +317,7 @@ export async function generatePptx(summary, departmentName = 'Information Techno
   // SLIDE 7: Section D - Student Participation (NPTEL)
   // ==========================================
   const slide7 = pptx.addSlide();
-  applySlideMaster(slide7, 'D. Details of Student Participation (NPTEL)', logoBase64, departmentName);
+  applySlideMaster(slide7, 'D. Details of Student Participation (NPTEL)', departmentName);
   
   const dRows = [
     ['1', 'Mrs A Arifa Banu', 'Aahela Parveen', 'IV', 'Data Analytics with Python', 'Elite'],
@@ -319,7 +338,7 @@ export async function generatePptx(summary, departmentName = 'Information Techno
   // SLIDE 8: Section H - Work Plan (Next Month)
   // ==========================================
   const slide8 = pptx.addSlide();
-  applySlideMaster(slide8, 'H. Work Plan Targets (Next Month)', logoBase64, departmentName);
+  applySlideMaster(slide8, 'H. Work Plan Targets (Next Month)', departmentName);
   
   let hRows = [];
   if (summary?.future_plans && Array.isArray(summary.future_plans) && summary.future_plans.length > 0) {
@@ -346,28 +365,66 @@ export async function generatePptx(summary, departmentName = 'Information Techno
   addSlideTable(slide8, ['S.No', 'Particulars', 'Requirement Target', 'To be Conducted'], hRows, [0.5, 3.5, 3.2, 2.0]);
 
   // ==========================================
-  // SLIDE 9: Signature Slide
+  // SLIDE 9: Thank You Slide (Closing Slide)
   // ==========================================
   const slide9 = pptx.addSlide();
-  applySlideMaster(slide9, 'Signature & Endorsement', logoBase64, departmentName);
+  slide9.background = { fill: 'F8FAFC' };
 
-  slide9.addText(`Department of ${departmentName}`, {
-    x: 0.5, y: 1.5, w: 9.0, h: 0.4,
-    fontSize: 16, bold: true, color: '1E3A8A', align: 'center'
-  });
-  slide9.addText('Monthly Report Period: 06.07.2026 to 07.08.2026', {
-    x: 0.5, y: 2.0, w: 9.0, h: 0.4,
-    fontSize: 12, color: '475569', align: 'center'
+  // Top Accent Bar
+  slide9.addShape('rect', {
+    x: 0, y: 0, w: 10.0, h: 0.12,
+    fill: '1E3A8A'
   });
 
+  // Central Hero Card Container (Navy Blue)
+  slide9.addShape('rect', {
+    x: 1.0, y: 0.6, w: 8.0, h: 4.2,
+    fill: '1E3A8A', line: { color: '1D4ED8', width: 1.5 }
+  });
+
+  // Inner Accent Border Box
+  slide9.addShape('rect', {
+    x: 1.2, y: 0.8, w: 7.6, h: 3.8,
+    fill: '1E3A8A', line: { color: '93C5FD', width: 1 }
+  });
+
+  // Large THANK YOU Heading
+  slide9.addText('THANK YOU!', {
+    x: 1.5, y: 1.35, w: 7.0, h: 0.9,
+    color: 'FFFFFF', fontSize: 36, bold: true, align: 'center', tracking: 2
+  });
+
+  // Decorative Accent Separator
+  slide9.addShape('rect', {
+    x: 3.5, y: 2.35, w: 3.0, h: 0.03,
+    fill: '93C5FD'
+  });
+
+  // Sub-text: Department Name & Institutional Endorsement
+  slide9.addText(`DEPARTMENT OF ${departmentName.toUpperCase()}`, {
+    x: 1.5, y: 2.55, w: 7.0, h: 0.45,
+    color: '93C5FD', fontSize: 15, bold: true, align: 'center'
+  });
+
+  slide9.addText('Mount Zion College of Engineering and Technology', {
+    x: 1.5, y: 3.1, w: 7.0, h: 0.4,
+    color: 'FFFFFF', fontSize: 13, bold: true, align: 'center'
+  });
+
+  slide9.addText('An Autonomous Institution | Accredited by NAAC with A+ Grade', {
+    x: 1.5, y: 3.55, w: 7.0, h: 0.35,
+    color: 'CBD5E1', fontSize: 10.5, italic: true, align: 'center'
+  });
+
+  // Bottom Footer
   slide9.addShape('line', {
-    x: 3.0, y: 4.0, w: 4.0, h: 0,
-    line: { color: '1E3A8A', width: 1.5 }
+    x: 0.5, y: 5.15, w: 9.0, h: 0,
+    line: { color: 'CBD5E1', width: 1 }
   });
 
-  slide9.addText('Signature of HoD', {
-    x: 3.0, y: 4.1, w: 4.0, h: 0.3,
-    align: 'center', fontSize: 11, bold: true, color: '0F172A'
+  slide9.addText('Mount Zion College of Engineering and Technology — To Make Man Whole!!', {
+    x: 0.5, y: 5.25, w: 9.0, h: 0.3,
+    fontSize: 8.5, color: '64748B', align: 'center'
   });
 
   return await pptx.write('nodebuffer');
