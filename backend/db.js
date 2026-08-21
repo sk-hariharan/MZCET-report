@@ -427,6 +427,32 @@ export async function initializeDatabase() {
     await run(tableSql);
   }
 
+  // Auto-migrate schema columns for existing SQLite databases
+  const alterMigrations = [
+    "ALTER TABLE teaching_activities ADD COLUMN course_type TEXT DEFAULT 'Theory'",
+    "ALTER TABLE teaching_activities ADD COLUMN instructor_name TEXT",
+    "ALTER TABLE teaching_activities ADD COLUMN classes_taken INTEGER DEFAULT 0",
+    "ALTER TABLE teaching_activities ADD COLUMN classes_cancelled INTEGER DEFAULT 0",
+    "ALTER TABLE teaching_activities ADD COLUMN classes_rescheduled INTEGER DEFAULT 0",
+    "ALTER TABLE teaching_activities ADD COLUMN teaching_hours TEXT",
+    "ALTER TABLE teaching_activities ADD COLUMN syllabus_planned TEXT",
+    "ALTER TABLE teaching_activities ADD COLUMN syllabus_completed TEXT",
+    "ALTER TABLE teaching_activities ADD COLUMN syllabus_pct REAL DEFAULT 0.0",
+    "ALTER TABLE teaching_activities ADD COLUMN current_unit TEXT",
+    "ALTER TABLE teaching_activities ADD COLUMN pending_units TEXT",
+    "ALTER TABLE teaching_activities ADD COLUMN pending_reason TEXT",
+    "ALTER TABLE teaching_activities ADD COLUMN lesson_plan_status TEXT",
+    "ALTER TABLE teaching_activities ADD COLUMN teaching_methods TEXT",
+    "ALTER TABLE teaching_activities ADD COLUMN ict_tools TEXT",
+    "ALTER TABLE teaching_activities ADD COLUMN additional_classes INTEGER DEFAULT 0",
+    "ALTER TABLE teaching_activities ADD COLUMN extra_hours INTEGER DEFAULT 0",
+    "ALTER TABLE teaching_activities ADD COLUMN exp_completed TEXT",
+    "ALTER TABLE teaching_activities ADD COLUMN exp_remaining TEXT"
+  ];
+  for (const sql of alterMigrations) {
+    try { await run(sql); } catch (e) {}
+  }
+
   // Seed demo data if users table is empty
   const userCount = await get('SELECT count(*) as count FROM users');
   if (userCount.count === 0) {
@@ -725,6 +751,18 @@ export const db = {
     }
   },
 
+  // Helper to query valid columns for a table
+  getTableColumns: async (tableName) => {
+    if (isSupabaseActive) return null;
+    try {
+      const info = await all(`PRAGMA table_info(${tableName})`);
+      if (!info || info.length === 0) return null;
+      return new Set(info.map(col => col.name));
+    } catch (e) {
+      return null;
+    }
+  },
+
   // Unified Reports Creation & CRUD (Handles all sub tables)
   createReport: async (reportMeta, sectionData) => {
     if (isSupabaseActive) {
@@ -757,10 +795,14 @@ export const db = {
       for (const section of Object.keys(sectionData)) {
         const rows = sectionData[section];
         if (Array.isArray(rows) && rows.length > 0) {
+          const validCols = await db.getTableColumns(section);
           for (const row of rows) {
-            const rowClean = { ...row };
-            delete rowClean.id;
-            delete rowClean.report_id;
+            const rowClean = {};
+            for (const [k, v] of Object.entries(row)) {
+              if (k !== 'id' && k !== 'report_id' && (!validCols || validCols.has(k))) {
+                rowClean[k] = v;
+              }
+            }
             const rowKeys = Object.keys(rowClean);
             const rowVals = Object.values(rowClean);
             if (rowKeys.length > 0) {
@@ -868,10 +910,14 @@ export const db = {
         await run(`DELETE FROM ${table} WHERE report_id = ?`, [id]);
         const rows = sectionData[table];
         if (Array.isArray(rows) && rows.length > 0) {
+          const validCols = await db.getTableColumns(table);
           for (const row of rows) {
-            const rowClean = { ...row };
-            delete rowClean.id;
-            delete rowClean.report_id;
+            const rowClean = {};
+            for (const [k, v] of Object.entries(row)) {
+              if (k !== 'id' && k !== 'report_id' && (!validCols || validCols.has(k))) {
+                rowClean[k] = v;
+              }
+            }
             const rowKeys = Object.keys(rowClean);
             const rowVals = Object.values(rowClean);
             if (rowKeys.length > 0) {
