@@ -97,29 +97,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
         )}
       </div>
 
-      {/* User Quick Info */}
-      <div className="p-4 border-b border-slate-800 bg-slate-950/40">
-        <div className="flex items-center gap-3">
-          <div className="h-10 w-10 rounded-xl bg-gradient-to-tr from-blue-700 to-indigo-600 border border-blue-400/30 flex items-center justify-center font-black text-white text-base uppercase overflow-hidden shadow-inner flex-shrink-0">
-            {user.profile_photo ? (
-              <img src={user.profile_photo} alt={user.name} className="h-full w-full object-cover" />
-            ) : (
-              user.name?.charAt(0) || 'U'
-            )}
-          </div>
-          <div className="min-w-0 flex-1">
-            <p className="text-xs font-bold truncate text-slate-100">{user.name}</p>
-            <div className="flex items-center gap-1.5 mt-0.5">
-              <span className="text-[9px] font-extrabold px-1.5 py-0.5 rounded bg-blue-950/80 text-blue-300 uppercase border border-blue-800/40 tracking-wider">
-                {user.role}
-              </span>
-              <span className="text-[10px] text-slate-400 truncate">
-                {user.department_name ? user.department_name.split(' ')[0] : 'Admin'}
-              </span>
-            </div>
-          </div>
-        </div>
-      </div>
+
 
       {/* Navigation List */}
       <nav className="flex-1 px-3 py-4 space-y-1.5 overflow-y-auto">
