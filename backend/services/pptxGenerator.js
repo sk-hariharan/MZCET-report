@@ -148,13 +148,13 @@ export async function generatePptx(summary, departmentName = 'Information Techno
   // ==========================================
   const slide2 = pptx.addSlide();
   applySlideMaster(slide2, 'A. Syllabus Completion — II YEAR (Theory & Lab)', logoBase64, departmentName);
-  
+
   let iiRows = [];
   if (summary?.teaching_activities && Array.isArray(summary.teaching_activities) && summary.teaching_activities.length > 0) {
     iiRows = summary.teaching_activities
       .filter(t => (t.class_assigned || '').includes('II') || (t.class_assigned || '').includes('2'))
       .map((t, idx) => [
-        t.subject_code || `IT253${idx+1}`,
+        t.subject_code || `IT253${idx + 1}`,
         `${t.subject_name || 'Subject'} / ${t.instructor_name || 'Faculty'}`,
         t.teaching_hours ? `${t.teaching_hours}` : `${t.classes_taken || 20} Hours`,
         t.syllabus_completed || `Unit 1 & 2 Completed`
@@ -180,13 +180,13 @@ export async function generatePptx(summary, departmentName = 'Information Techno
   // ==========================================
   const slide3 = pptx.addSlide();
   applySlideMaster(slide3, 'A. Syllabus Completion — III YEAR (Theory & Lab)', logoBase64, departmentName);
-  
+
   let iiiRows = [];
   if (summary?.teaching_activities && Array.isArray(summary.teaching_activities) && summary.teaching_activities.length > 0) {
     iiiRows = summary.teaching_activities
       .filter(t => (t.class_assigned || '').includes('III') || (t.class_assigned || '').includes('3'))
       .map((t, idx) => [
-        t.subject_code || `CS35${idx+1}`,
+        t.subject_code || `CS35${idx + 1}`,
         `${t.subject_name || 'Subject'} / ${t.instructor_name || 'Faculty'}`,
         t.teaching_hours ? `${t.teaching_hours}` : `${t.classes_taken || 20} Hours`,
         t.syllabus_completed || `Unit 1 & 2 Completed`
@@ -211,13 +211,13 @@ export async function generatePptx(summary, departmentName = 'Information Techno
   // ==========================================
   const slide4 = pptx.addSlide();
   applySlideMaster(slide4, 'A. Syllabus Completion — IV YEAR (Theory)', logoBase64, departmentName);
-  
+
   let ivRows = [];
   if (summary?.teaching_activities && Array.isArray(summary.teaching_activities) && summary.teaching_activities.length > 0) {
     ivRows = summary.teaching_activities
       .filter(t => (t.class_assigned || '').includes('IV') || (t.class_assigned || '').includes('4'))
       .map((t, idx) => [
-        t.subject_code || `GE37${idx+1}`,
+        t.subject_code || `GE37${idx + 1}`,
         `${t.subject_name || 'Subject'} / ${t.instructor_name || 'Faculty'}`,
         t.teaching_hours ? `${t.teaching_hours}` : `${t.classes_taken || 20} Hours`,
         t.syllabus_completed || `Unit 1,2 Completed`
@@ -227,9 +227,9 @@ export async function generatePptx(summary, departmentName = 'Information Techno
     ivRows = [
       ['GE3791', 'Human Values and Ethics / Mrs. S. Ammu', '28 Hours', 'Unit 1,2,3 & Unit 4.1/4.5 Completed'],
       ['GE3751', 'Principles of Management / Mr. K. Muthuraman', '20 Hours', 'Unit 1,2 & 3.8/3.10 Completed'],
-      ['AI3021', 'OE 2 IT in Agriculture / Ms. S. Nivetha', '25 Hours', 'Unit 1,2 & 3.6/3.8 Completed'],
-      ['OME354', 'OE 3 Applied Design Thinking / Mrs A Arifa Banu', '23 Hours', 'Unit 1,2,3 & Unit 4.3/4.6 Completed'],
-      ['CRA332', 'OE 4 Drone Technologies / Ms. Ramaprabha', '23 Hours', 'Unit 1,2 & 3.6/3.8 Completed']
+      ['AI3021', 'OE2-IT IN AGRICULTURE SYSTEM / Ms. S. Nivetha', '25 Hours', 'Unit 1,2 & 3.6/3.8 Completed'],
+      ['OME354', 'OE3-APPLIED DESIGN THINKING / Mrs A Arifa Banu', '23 Hours', 'Unit 1,2,3 & Unit 4.3/4.6 Completed'],
+      ['CRA332', 'OE4 DRONE TECHNOLOGY / Ms. Ramaprabha', '23 Hours', 'Unit 1,2 & 3.6/3.8 Completed']
     ];
   }
   addSlideTable(slide4, ['Sub. Code', 'Course Name & Instructor', 'Hours Handled', 'Completion Status'], ivRows, [1.0, 3.6, 1.4, 3.2]);
@@ -239,7 +239,7 @@ export async function generatePptx(summary, departmentName = 'Information Techno
   // ==========================================
   const slide5 = pptx.addSlide();
   applySlideMaster(slide5, 'B. Details of Events Organised', logoBase64, departmentName);
-  
+
   let bRows = [];
   if (summary?.events && Array.isArray(summary.events) && summary.events.length > 0) {
     bRows = summary.events.map((e, idx) => [
@@ -268,7 +268,7 @@ export async function generatePptx(summary, departmentName = 'Information Techno
   // ==========================================
   const slide6 = pptx.addSlide();
   applySlideMaster(slide6, 'C. Details of Faculty Participation (FDP & NPTEL)', logoBase64, departmentName);
-  
+
   let cRows = [];
   if (summary?.fdp_training && Array.isArray(summary.fdp_training) && summary.fdp_training.length > 0) {
     cRows = summary.fdp_training.map((f, idx) => [
@@ -299,7 +299,7 @@ export async function generatePptx(summary, departmentName = 'Information Techno
   // ==========================================
   const slide7 = pptx.addSlide();
   applySlideMaster(slide7, 'D. Details of Student Participation (NPTEL)', logoBase64, departmentName);
-  
+
   const dRows = [
     ['1', 'Mrs A Arifa Banu', 'Aahela Parveen', 'IV', 'Data Analytics with Python', 'Elite'],
     ['2', 'Mrs V Brindha Devi', 'J Nandhini', 'III', 'Cloud Computing', 'Elite with Silver'],
@@ -320,7 +320,7 @@ export async function generatePptx(summary, departmentName = 'Information Techno
   // ==========================================
   const slide8 = pptx.addSlide();
   applySlideMaster(slide8, 'H. Work Plan Targets (Next Month)', logoBase64, departmentName);
-  
+
   let hRows = [];
   if (summary?.future_plans && Array.isArray(summary.future_plans) && summary.future_plans.length > 0) {
     hRows = summary.future_plans.map((p, idx) => [

@@ -607,9 +607,9 @@ export async function generateDepartmentSummaryDocx(summary, departmentName) {
   const ivTheoryRows = [
     ['GE3791 - Human Values and Ethics / Mrs. S. Ammu', '28 Hours', 'Unit 1, 2, 3 & Unit 4.1/4.5 Completed'],
     ['GE3751 - Principles of Management / Mr. K. Muthuraman', '20 Hours', 'Unit 1, 2 & 3.8/3.10 Completed'],
-    ['AI3021 - OE 2 IT in Agriculture System / Ms. S. Nivetha', '25 Hours', 'Unit 1, 2 & 3.6/3.8 Completed'],
-    ['OME354 - OE 3 Applied Design Thinking / Mrs A Arifa Banu', '23 Hours', 'Unit 1, 2, 3 & Unit 4.3/4.6 Completed'],
-    ['CRA332 - OE 4 Drone Technologies / Ms. Ramaprabha', '23 Hours', 'Unit 1, 2 & 3.6/3.8 Completed']
+    ['AI3021 - OE2-IT IN AGRICULTURE SYSTEM / Ms. S. Nivetha', '25 Hours', 'Unit 1, 2 & 3.6/3.8 Completed'],
+    ['OME354 - OE3-APPLIED DESIGN THINKING / Mrs A Arifa Banu', '23 Hours', 'Unit 1, 2, 3 & Unit 4.3/4.6 Completed'],
+    ['CRA332 - OE4 DRONE TECHNOLOGY / Ms. Ramaprabha', '23 Hours', 'Unit 1, 2 & 3.6/3.8 Completed']
   ];
   children.push(createStyledTable(ivTheoryHeaders, ivTheoryRows));
 
