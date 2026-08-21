@@ -425,7 +425,7 @@ router.put('/:id/status', authenticateToken, async (req, res) => {
   }
 });
 
-// 8. Delete Report (Drafts and Rejections only, Admin can delete any)
+// 8. Delete Report (Staff can delete their reports, HOD can delete department reports, Admin can delete any report)
 router.delete('/:id', authenticateToken, async (req, res) => {
   const reportId = Number(req.params.id);
 
@@ -435,14 +435,12 @@ router.delete('/:id', authenticateToken, async (req, res) => {
       return res.status(404).json({ message: 'Report not found' });
     }
 
-    // Auth checking
-    if (req.user.role !== 'admin' && report.staff_id !== req.user.id) {
-      return res.status(403).json({ message: 'You do not have permission to delete this report' });
-    }
+    const isAdmin = req.user.role === 'admin';
+    const isHod = req.user.role === 'hod' && (report.department_id === req.user.department_id || !req.user.department_id || !report.department_id);
+    const isOwner = report.staff_id === req.user.id;
 
-    // Enforce business rules
-    if (req.user.role !== 'admin' && report.status !== 'Draft' && report.status !== 'Rejected') {
-      return res.status(400).json({ message: 'You can only delete reports in Draft or Rejected status.' });
+    if (!isAdmin && !isHod && !isOwner) {
+      return res.status(403).json({ message: 'You do not have permission to delete this report' });
     }
 
     await db.deleteReport(reportId);

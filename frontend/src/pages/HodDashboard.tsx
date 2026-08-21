@@ -8,7 +8,8 @@ import {
   Eye,
   RefreshCw,
   Award,
-  BookOpen
+  BookOpen,
+  Trash2
 } from 'lucide-react';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 import type { FullReport } from '../types';
@@ -84,6 +85,23 @@ export const HodDashboard: React.FC<HodDashboardProps> = ({ onReviewReport, onPr
     }, 5000);
     return () => clearInterval(interval);
   }, [token]);
+
+  const handleDeleteReport = async (reportId: number) => {
+    if (!window.confirm(`Are you sure you want to delete report #${reportId}? This action cannot be undone.`)) {
+      return;
+    }
+    try {
+      const res = await fetch(`${apiBaseUrl}/reports/${reportId}`, {
+        method: 'DELETE',
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.message || 'Failed to delete report');
+      fetchHodData();
+    } catch (err: any) {
+      alert(`Delete Error: ${err.message}`);
+    }
+  };
 
   // Compile Chart data from approved reports or all submitted
   const chartData = (allReports.length > 0 ? allReports : pendingQueue).map((r) => ({
@@ -293,12 +311,19 @@ export const HodDashboard: React.FC<HodDashboardProps> = ({ onReviewReport, onPr
                     <td className="p-4 font-bold text-slate-800 text-xs">{report.month} {report.week_number ? `(W${report.week_number})` : ''}</td>
                     <td className="p-4">{getStatusBadge(report.status)}</td>
                     <td className="p-4 text-xs font-semibold text-slate-500">{report.submitted_at ? new Date(report.submitted_at).toLocaleDateString() : '—'}</td>
-                    <td className="p-4 pr-6 text-right">
+                    <td className="p-4 pr-6 text-right space-x-2">
                       <button 
                         onClick={() => onReviewReport(report.id)}
                         className="bg-blue-600 hover:bg-blue-700 text-white font-black text-xs py-2 px-4 rounded-xl shadow-md shadow-blue-900/20 transition-all hover:scale-105 active:scale-95"
                       >
                         Review & Action
+                      </button>
+                      <button 
+                        onClick={() => handleDeleteReport(report.id)}
+                        className="text-rose-600 hover:text-rose-800 p-2 hover:bg-rose-50 rounded-xl inline-flex items-center gap-1 text-xs font-bold transition-colors"
+                        title="Delete Report"
+                      >
+                        <Trash2 className="h-4 w-4" /> Delete
                       </button>
                     </td>
                   </tr>
@@ -415,12 +440,19 @@ export const HodDashboard: React.FC<HodDashboardProps> = ({ onReviewReport, onPr
                         </button>
                       )}
                     </td>
-                    <td className="p-4 pr-6 text-right">
+                    <td className="p-4 pr-6 text-right space-x-1">
                       <button 
                         onClick={() => onPreviewReport(report.id)}
                         className="text-slate-600 hover:text-slate-900 font-bold inline-flex items-center gap-1 text-xs hover:bg-slate-100 px-3 py-1.5 rounded-xl transition-all"
                       >
                         <Eye className="h-4 w-4" /> View Details
+                      </button>
+                      <button 
+                        onClick={() => handleDeleteReport(report.id)}
+                        className="text-rose-600 hover:text-rose-800 p-1.5 hover:bg-rose-50 rounded-xl inline-flex items-center gap-1 text-xs font-bold transition-colors"
+                        title="Delete Report"
+                      >
+                        <Trash2 className="h-4 w-4" /> Delete
                       </button>
                     </td>
                   </tr>

@@ -10,7 +10,8 @@ import {
   FileText,
   Download,
   RefreshCw,
-  Award
+  Award,
+  Trash2
 } from 'lucide-react';
 import type { FullReport } from '../types';
 
@@ -125,6 +126,23 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ currentTab = 'da
     }, 5000);
     return () => clearInterval(interval);
   }, [token, searchQuery, selectedDept, selectedStatus, selectedMonth, selectedAY, selectedSem]);
+
+  const handleDeleteReport = async (reportId: number) => {
+    if (!window.confirm(`Are you sure you want to delete report #${reportId}? This action cannot be undone.`)) {
+      return;
+    }
+    try {
+      const res = await fetch(`${apiBaseUrl}/reports/${reportId}`, {
+        method: 'DELETE',
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.message || 'Failed to delete report');
+      fetchAdminData();
+    } catch (err: any) {
+      alert(`Delete Error: ${err.message}`);
+    }
+  };
 
   // Exporters for College level summary
   const handleCollegeReportDownload = async (format: 'word' | 'ppt') => {
@@ -482,12 +500,19 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ currentTab = 'da
                           </button>
                         )}
                       </td>
-                      <td className="p-4 pr-6 text-right">
+                      <td className="p-4 pr-6 text-right space-x-1">
                         <button 
                           onClick={() => onPreviewReport(report.id)}
                           className="text-slate-600 hover:text-slate-900 font-bold inline-flex items-center gap-1 text-xs hover:bg-slate-100 px-3 py-1.5 rounded-xl transition-all"
                         >
                           <Eye className="h-4 w-4" /> View Details
+                        </button>
+                        <button 
+                          onClick={() => handleDeleteReport(report.id)}
+                          className="text-rose-600 hover:text-rose-800 p-1.5 hover:bg-rose-50 rounded-xl inline-flex items-center gap-1 text-xs font-bold transition-colors"
+                          title="Delete Report"
+                        >
+                          <Trash2 className="h-4 w-4" /> Delete
                         </button>
                       </td>
                     </tr>

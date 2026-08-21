@@ -12,7 +12,7 @@ let supabase = null;
 let sqliteDb = null;
 let isSupabaseActive = false;
 
-const dbPath = path.resolve('facultyreport.db');
+const dbPath = path.resolve(process.env.VERCEL ? '/tmp/facultyreport.db' : 'facultyreport.db');
 sqliteDb = new sqlite3.Database(dbPath);
 
 if (isSupabaseConfigured) {

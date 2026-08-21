@@ -13,7 +13,8 @@ import {
   Briefcase,
   Award,
   FlaskConical,
-  Loader2
+  Loader2,
+  Trash2
 } from 'lucide-react';
 import type { FullReport } from '../types';
 
@@ -56,6 +57,29 @@ export const ReportReviewModal: React.FC<ReportReviewModalProps> = ({
     };
     if (reportId) fetchReport();
   }, [reportId, apiBaseUrl, token]);
+
+  const handleDeleteReport = async () => {
+    if (!reportId) return;
+    if (!window.confirm(`Are you sure you want to delete report #${reportId}? This action cannot be undone.`)) {
+      return;
+    }
+    setActionLoading(true);
+    setError(null);
+    try {
+      const res = await fetch(`${apiBaseUrl}/reports/${reportId}`, {
+        method: 'DELETE',
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.message || 'Failed to delete report');
+      if (onActionComplete) onActionComplete('deleted');
+      onClose();
+    } catch (err: any) {
+      setError(err.message);
+    } finally {
+      setActionLoading(false);
+    }
+  };
 
   const handleAction = async (status: 'Approved' | 'Rejected') => {
     if (status === 'Rejected' && !reviewComment.trim()) {
@@ -353,12 +377,28 @@ export const ReportReviewModal: React.FC<ReportReviewModalProps> = ({
                 <XOctagon className="h-4 w-4" />
                 {actionLoading ? 'Processing...' : 'Request Corrections'}
               </button>
+              <button
+                onClick={handleDeleteReport}
+                disabled={actionLoading}
+                className="flex items-center justify-center gap-1.5 bg-rose-50 hover:bg-rose-100 text-rose-700 font-extrabold text-xs py-3.5 px-4 rounded-xl border border-rose-200 transition-all disabled:opacity-50"
+                title="Delete Report"
+              >
+                <Trash2 className="h-4 w-4" /> Delete
+              </button>
             </div>
           </div>
         )}
 
         {report && (!(user?.role === 'hod' || user?.role === 'admin') || (report.status !== 'Submitted' && report.status !== 'Resubmitted')) && (
-          <div className="p-4 border-t bg-slate-50 flex justify-end">
+          <div className="p-4 border-t bg-slate-50 flex justify-between items-center">
+            <button
+              onClick={handleDeleteReport}
+              disabled={actionLoading}
+              className="flex items-center gap-1.5 bg-rose-50 hover:bg-rose-100 text-rose-700 font-extrabold text-xs py-2 px-3.5 rounded-xl border border-rose-200 transition-all disabled:opacity-50"
+              title="Delete Report"
+            >
+              <Trash2 className="h-4 w-4" /> Delete Report
+            </button>
             <button onClick={onClose} className="bg-slate-800 hover:bg-slate-900 text-white font-bold text-xs py-2.5 px-6 rounded-xl transition-all">
               Close
             </button>

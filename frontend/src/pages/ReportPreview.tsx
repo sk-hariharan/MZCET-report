@@ -16,7 +16,8 @@ import {
   Paperclip,
   Check,
   Building2,
-  UserCheck
+  UserCheck,
+  Trash2
 } from 'lucide-react';
 import type { FullReport } from '../types';
 
@@ -55,6 +56,24 @@ export const ReportPreview: React.FC<ReportPreviewProps> = ({ reportId, onBack, 
 
     if (reportId) fetchReport();
   }, [reportId, apiBaseUrl, token]);
+
+  const handleDeleteReport = async () => {
+    if (!report) return;
+    if (!window.confirm(`Are you sure you want to delete report #${report.id}? This action cannot be undone.`)) {
+      return;
+    }
+    try {
+      const res = await fetch(`${apiBaseUrl}/reports/${report.id}`, {
+        method: 'DELETE',
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.message || 'Failed to delete report');
+      onBack();
+    } catch (err: any) {
+      alert(`Delete Error: ${err.message}`);
+    }
+  };
 
   const handleDownloadWord = async () => {
     if (!report) return;
@@ -207,6 +226,13 @@ export const ReportPreview: React.FC<ReportPreviewProps> = ({ reportId, onBack, 
               Edit Report
             </button>
           )}
+          <button
+            onClick={handleDeleteReport}
+            className="flex items-center gap-1.5 bg-rose-50 hover:bg-rose-100 text-rose-700 font-extrabold text-xs py-2.5 px-3.5 rounded-xl border border-rose-200 transition-all"
+            title="Delete Report"
+          >
+            <Trash2 className="h-4 w-4" /> Delete Report
+          </button>
         </div>
       </div>
 

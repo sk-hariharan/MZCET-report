@@ -4,13 +4,28 @@
   "description": "College Staff Weekly & Monthly Report Management & Automated Document Generation System for MZCET",
   "private": true,
   "scripts": {
-    "install:all": "npm install && npm install --prefix backend && npm install --prefix frontend",
+    "build": "npm run install:all && npm run build:frontend",
+    "build:frontend": "npm run build --prefix frontend",
+    "install:all": "npm install --legacy-peer-deps && npm install --prefix backend --legacy-peer-deps && npm install --prefix frontend --legacy-peer-deps",
     "dev:backend": "npm run dev --prefix backend",
     "dev:frontend": "npm run dev --prefix frontend",
     "dev": "npx concurrently \"npm run dev:backend\" \"npm run dev:frontend\"",
-    "start": "npm start --prefix backend"
+    "start": "node api/index.js"
   },
-  "dependencies": {},
+  "dependencies": {
+    "@supabase/supabase-js": "^2.45.1",
+    "bcryptjs": "^2.4.3",
+    "cors": "^2.8.5",
+    "docx": "^8.5.0",
+    "dotenv": "^16.4.5",
+    "express": "^4.19.2",
+    "jsonwebtoken": "^9.0.2",
+    "multer": "^1.4.5-lts.1",
+    "nodemailer": "^6.9.14",
+    "pdfkit": "^0.19.1",
+    "pptxgenjs": "^3.12.0",
+    "sqlite3": "^5.1.7"
+  },
   "devDependencies": {
     "concurrently": "^8.2.2"
   }

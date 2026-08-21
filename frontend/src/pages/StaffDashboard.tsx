@@ -7,6 +7,7 @@ import {
   FileCode,
   Eye,
   Edit3,
+  Trash2,
   Calendar,
   AlertTriangle,
   FolderOpen,
@@ -78,6 +79,23 @@ export const StaffDashboard: React.FC<StaffDashboardProps> = ({
     }, 5000);
     return () => clearInterval(interval);
   }, [token]);
+
+  const handleDeleteReport = async (reportId: number) => {
+    if (!window.confirm(`Are you sure you want to delete report #${reportId}? This action cannot be undone.`)) {
+      return;
+    }
+    try {
+      const res = await fetch(`${apiBaseUrl}/reports/${reportId}`, {
+        method: 'DELETE',
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.message || 'Failed to delete report');
+      fetchDashboardData();
+    } catch (err: any) {
+      alert(`Delete Error: ${err.message}`);
+    }
+  };
 
   const handleDownloadWord = async (report: FullReport) => {
     try {
@@ -373,6 +391,14 @@ export const StaffDashboard: React.FC<StaffDashboardProps> = ({
                           <Edit3 className="h-4 w-4" /> Edit
                         </button>
                       )}
+
+                      <button 
+                        onClick={() => handleDeleteReport(report.id)}
+                        className="text-rose-600 hover:text-rose-800 p-2 hover:bg-rose-50 rounded-xl inline-flex items-center gap-1 text-xs font-bold transition-colors"
+                        title="Delete Report"
+                      >
+                        <Trash2 className="h-4 w-4" /> Delete
+                      </button>
                     </td>
                   </tr>
                 ))}
