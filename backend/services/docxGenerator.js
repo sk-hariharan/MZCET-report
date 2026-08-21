@@ -127,6 +127,20 @@ function createSubSectionTitle(title) {
     ],
     spacing: { before: 140, after: 80 },
     keepWithNext: true
+  });}
+
+// Deduplication helper to prevent repeated records in the same section
+function removeDuplicates(records, keyFields) {
+  if (!Array.isArray(records)) return [];
+  const seen = new Set();
+  return records.filter(record => {
+    const key = keyFields
+      .map(field => String(record[field] || '').trim().toLowerCase())
+      .join('|');
+    if (!key || key.replace(/\|/g, '') === '') return true;
+    if (seen.has(key)) return false;
+    seen.add(key);
+    return true;
   });
 }
 
@@ -134,6 +148,25 @@ function createSubSectionTitle(title) {
 export async function generateDocx(report) {
   const headerLogoBuffer = getHeaderLogoBuffer();
   const children = [];
+
+  // Deduplicate section arrays independently
+  const teaching_activities = removeDuplicates(report.teaching_activities || [], ['subject_name', 'class_assigned']);
+  const student_attendance = removeDuplicates(report.student_attendance || [], ['class_name']);
+  const assessments = removeDuplicates(report.assessments || [], ['assessment_name', 'given_date']);
+  const remedial_activities = removeDuplicates(report.remedial_activities || [], ['class_name', 'date_conducted']);
+  const mentoring = removeDuplicates(report.mentoring || [], ['meeting_date', 'mentored_count']);
+  const project_guidance = removeDuplicates(report.project_guidance || [], ['project_title']);
+  const department_activities = removeDuplicates(report.department_activities || [], ['academic_planning']);
+  const events = removeDuplicates(report.events || [], ['event_name', 'event_date']);
+  const fdp_training = removeDuplicates(report.fdp_training || [], ['program_title', 'start_date']);
+  const research_activities = removeDuplicates(report.research_activities || [], ['journal_paper', 'conference_paper', 'research_proposal', 'work_done']);
+  const achievements = removeDuplicates(report.achievements || [], ['achievement_title', 'description']);
+  const administrative_activities = removeDuplicates(report.administrative_activities || [], ['exam_duty', 'committee_responsibility']);
+  const lab_activities = removeDuplicates(report.lab_activities || [], ['laboratory_handled']);
+  const meetings = removeDuplicates(report.meetings || [], ['title', 'meeting_date']);
+  const issues = removeDuplicates(report.issues || [], ['academic_issues', 'technical_issues']);
+  const future_plans = removeDuplicates(report.future_plans || [], ['particulars', 'target_to_achieve']);
+  const additional_remarks = removeDuplicates(report.additional_remarks || [], ['overall_summary']);
 
   children.push(
     new Paragraph({
@@ -198,7 +231,7 @@ export async function generateDocx(report) {
   // 1. Teaching Activities
   children.push(createSectionTitle('1. Teaching / Academic Activities'));
   const teachingHeaders = ['Subject Handled', 'Class Assigned', 'Taken/Resch/Cancel', 'Teaching Hours', 'Syllabus Comp. %', 'Lesson Plan Status'];
-  const teachingRows = (report.teaching_activities || []).map(t => [
+  const teachingRows = teaching_activities.map(t => [
     t.subject_name,
     t.class_assigned && t.class_assigned.includes(' | ')
       ? `${t.class_assigned.split(' | ')[1]} - ${t.class_assigned.split(' | ')[2]} (${t.class_assigned.split(' | ')[0]})`
@@ -213,7 +246,7 @@ export async function generateDocx(report) {
   // 2. Student Attendance & Performance
   children.push(createSectionTitle('2. Student Attendance & Performance'));
   const attHeaders = ['Class Name', 'Total Students', 'Avg Attendance %', 'Below 75% Count', 'Class Average Mark', 'Performance Analysis'];
-  const attRows = (report.student_attendance || []).map(a => [
+  const attRows = student_attendance.map(a => [
     a.class_name,
     a.total_students,
     `${a.avg_attendance_pct}%`,
@@ -226,7 +259,7 @@ export async function generateDocx(report) {
   // 3. Assignment & Assessment
   children.push(createSectionTitle('3. Assignment & Assessment'));
   const assHeaders = ['Assessment Name', 'Date Given', 'Submissions', 'Evaluation Comp.', 'CO-wise Performance', 'Corrective Action'];
-  const assRows = (report.assessments || []).map(a => [
+  const assRows = assessments.map(a => [
     a.assessment_name,
     a.given_date,
     a.submission_count,
@@ -239,7 +272,7 @@ export async function generateDocx(report) {
   // 4. Remedial Activities
   children.push(createSectionTitle('4. Remedial Activities'));
   const remHeaders = ['Class Name', 'Date Conducted', 'Attended Count', 'Topics Covered', 'Slow Learner Support', 'Improvement Remarks'];
-  const remRows = (report.remedial_activities || []).map(r => [
+  const remRows = remedial_activities.map(r => [
     r.class_name,
     r.date_conducted,
     r.students_attended,
@@ -252,7 +285,7 @@ export async function generateDocx(report) {
   // 5. Student Mentoring
   children.push(createSectionTitle('5. Student Mentoring'));
   const mentHeaders = ['Mentored Count', 'Meeting Date', 'Academic Issues Discussed', 'Attendance Issues', 'Career Guidance', 'Mentoring Outcome'];
-  const mentRows = (report.mentoring || []).map(m => [
+  const mentRows = mentoring.map(m => [
     m.mentored_count,
     m.meeting_date,
     m.academic_issues,
@@ -265,7 +298,7 @@ export async function generateDocx(report) {
   // 6. Project Guidance
   children.push(createSectionTitle('6. Project Guidance'));
   const projHeaders = ['Project Title', 'Students Guided', 'Review Details', 'Progress %', 'Technical Guidance', 'Completion Status'];
-  const projRows = (report.project_guidance || []).map(p => [
+  const projRows = project_guidance.map(p => [
     p.project_title,
     p.students_guided,
     `Review #${p.review_number || 1} (${p.review_conducted || 'Done'})`,
@@ -278,7 +311,7 @@ export async function generateDocx(report) {
   // 7. Department Activities
   children.push(createSectionTitle('7. Department Activities'));
   const deptHeaders = ['Meetings (Attended/Conducted)', 'Academic Planning', 'NBA/NAAC Accreditation', 'Lab Maintenance', 'Workload & Timetable', 'Documentation'];
-  const deptRows = (report.department_activities || []).map(d => [
+  const deptRows = department_activities.map(d => [
     `${d.meetings_attended || 0} / ${d.meetings_conducted || 0}`,
     d.academic_planning,
     d.accreditation_work,
@@ -291,7 +324,7 @@ export async function generateDocx(report) {
   // 8. Events & Co-Curricular Activities
   children.push(createSectionTitle('8. Events & Co-Curricular Activities'));
   const eventHeaders = ['Event Name', 'Date', 'Type', 'Role', 'Students Participated', 'Outcome / Description'];
-  const eventRows = (report.events || []).map(e => [
+  const eventRows = events.map(e => [
     e.event_name,
     e.event_date,
     e.event_type,
@@ -304,7 +337,7 @@ export async function generateDocx(report) {
   // 9. FDP, Workshops & Trainings
   children.push(createSectionTitle('9. FDP, Workshops & Trainings'));
   const fdpHeaders = ['Program Type', 'Program Title', 'Organizing Institution', 'Duration / Mode', 'Role', 'Skill Gained & Application'];
-  const fdpRows = (report.fdp_training || []).map(f => [
+  const fdpRows = fdp_training.map(f => [
     f.program_type,
     f.program_title,
     f.organizing_institution,
@@ -317,7 +350,7 @@ export async function generateDocx(report) {
   // 10. Research Activities
   children.push(createSectionTitle('10. Research Activities'));
   const resHeaders = ['Journal / Conf Paper', 'Research Work Description', 'Status', 'Patent / Book Info', 'Scopus / WoS', 'Citations'];
-  const resRows = (report.research_activities || []).map(r => [
+  const resRows = research_activities.map(r => [
     `${r.journal_paper || ''} ${r.conference_paper || ''}`.trim() || 'N/A',
     r.work_done,
     r.publication_status,
@@ -330,7 +363,7 @@ export async function generateDocx(report) {
   // 11. Achievements
   children.push(createSectionTitle('11. Achievements & Recognitions'));
   const achHeaders = ['Achievement Title', 'Type', 'Category', 'Date', 'Level', 'Description / Recognition'];
-  const achRows = (report.achievements || []).map(a => [
+  const achRows = achievements.map(a => [
     a.achievement_title,
     a.achievement_type,
     a.category,
@@ -343,7 +376,7 @@ export async function generateDocx(report) {
   // 12. Administrative Activities
   children.push(createSectionTitle('12. Administrative Activities'));
   const adminHeaders = ['Exam / Invigilation Duties', 'Admission / Scholarship', 'Data / Atten. Verification', 'Committee Responsibilities', 'Other Admin Tasks'];
-  const adminRows = (report.administrative_activities || []).map(a => [
+  const adminRows = administrative_activities.map(a => [
     `Exam: ${a.exam_duty || 'N/A'}. Invigilation: ${a.invigilation_duty || 'N/A'}. Valuation: ${a.valuation_duty || 'N/A'}`,
     `Admission: ${a.admission_work || 'N/A'}. Scholarship: ${a.scholarship_verification || 'N/A'}`,
     `Data: ${a.student_data_verification || 'N/A'}. Attendance: ${a.attendance_verification || 'N/A'}`,
@@ -355,7 +388,7 @@ export async function generateDocx(report) {
   // 13. Lab / Infrastructure Activities
   children.push(createSectionTitle('13. Laboratory & Infrastructure Activities'));
   const labHeaders = ['Laboratory Handled', 'Classes Conducted', 'Software Installed', 'Maintenance Done', 'Requirements / Suggestions'];
-  const labRows = (report.lab_activities || []).map(l => [
+  const labRows = lab_activities.map(l => [
     l.laboratory_handled,
     l.classes_conducted,
     l.software_installation,
@@ -367,7 +400,7 @@ export async function generateDocx(report) {
   // 14. Meetings
   children.push(createSectionTitle('14. Meetings Attended / Conducted'));
   const meetHeaders = ['Meeting Title', 'Date / Type', 'Agenda', 'Decisions Taken', 'Action Items & Completed'];
-  const meetRows = (report.meetings || []).map(m => [
+  const meetRows = meetings.map(m => [
     m.title,
     `${m.meeting_date || ''} (${m.meeting_type || ''})`,
     m.agenda,
@@ -379,7 +412,7 @@ export async function generateDocx(report) {
   // 15. Issues & Challenges
   children.push(createSectionTitle('15. Issues & Challenges'));
   const issueHeaders = ['Academic / Student Issues', 'Attendance / Technical Issues', 'Infrastructure / Lab Issues', 'Other Challenges', 'Support Required'];
-  const issueRows = (report.issues || []).map(i => [
+  const issueRows = issues.map(i => [
     `Academic: ${i.academic_issues || 'None'}. Student: ${i.student_issues || 'None'}`,
     `Attendance: ${i.attendance_issues || 'None'}. Technical: ${i.technical_issues || 'None'}`,
     `Infra: ${i.infrastructure_issues || 'None'}. Lab: ${i.laboratory_issues || 'None'}`,
@@ -391,7 +424,7 @@ export async function generateDocx(report) {
   // 16. Future Plans
   children.push(createSectionTitle('16. Future Period Plan'));
   const planHeaders = ['Planned Classes / Syllabus %', 'Assignments / Internal Exams', 'Remedial / Mentoring Plans', 'Planned Events / FDPs / Research', 'Targets to Achieve'];
-  const planRows = (report.future_plans || []).map(p => [
+  const planRows = future_plans.map(p => [
     `Classes: ${p.planned_classes || 0}. Syllabus Target: ${p.target_syllabus_pct || 0}%`,
     `Assignments: ${p.assignments_planned || 'None'}. Internals: ${p.internal_assessments || 'None'}`,
     `Remedial: ${p.remedial_classes || 'None'}. Mentoring: ${p.mentoring_planned || 'None'}`,
@@ -403,7 +436,7 @@ export async function generateDocx(report) {
   // 17. Additional Remarks
   children.push(createSectionTitle('17. Additional Remarks & Overall Summary'));
   const remarksHeaders = ['Overall Performance Summary', 'Major Contributions', 'Important Updates', 'Suggestions & Recommendations'];
-  const remarksRows = (report.additional_remarks || []).map(r => [
+  const remarksRows = additional_remarks.map(r => [
     r.overall_summary,
     r.major_contributions,
     r.important_updates,
