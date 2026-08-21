@@ -19,14 +19,6 @@ Automated Staff Weekly & Monthly Activity Reporting, Analytics, and Document Gen
   - Local **SQLite** database for zero-config local development.
   - Remote **Supabase PostgreSQL** cloud database integration.
 
-## Default Credentials (Demo Accounts)
-
-| Role | Username / Staff ID | Email Address | Account Name | Password |
-| :--- | :--- | :--- | :--- | :--- |
-| **Faculty / Staff** | `mzcet@it_coordinator` | `staff@mzcet.edu.in` | Mrs. V Brindha Devi | `mzcet@1234` |
-| **HOD** | `mzcet@it_hod` | `hod.it@mzcet.edu.in` | Dr. P. Rajkumar | `mzcet@1234` |
-| **Administrator** | `mzcet@admin` | `admin@mzcet.edu.in` | MZCET Admin Portal | `mzcet@1234` |
-
 ## Getting Started
 
 ### Prerequisites
