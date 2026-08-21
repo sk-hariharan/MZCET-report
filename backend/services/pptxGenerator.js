@@ -173,7 +173,7 @@ export async function generatePptx(summary, departmentName = 'Information Techno
     iiRows = summary.teaching_activities
       .filter(t => (t.class_assigned || '').includes('II') || (t.class_assigned || '').includes('2'))
       .map((t, idx) => [
-        t.subject_code || `IT253${idx+1}`,
+        t.subject_code || `IT253${idx + 1}`,
         `${t.subject_name || 'Subject'} / ${t.instructor_name || 'Faculty'}`,
         t.teaching_hours ? `${t.teaching_hours}` : `${t.classes_taken || 20} Hours`,
         t.syllabus_completed || `Unit 1 & 2 Completed`
@@ -205,7 +205,7 @@ export async function generatePptx(summary, departmentName = 'Information Techno
     iiiRows = summary.teaching_activities
       .filter(t => (t.class_assigned || '').includes('III') || (t.class_assigned || '').includes('3'))
       .map((t, idx) => [
-        t.subject_code || `CS35${idx+1}`,
+        t.subject_code || `CS35${idx + 1}`,
         `${t.subject_name || 'Subject'} / ${t.instructor_name || 'Faculty'}`,
         t.teaching_hours ? `${t.teaching_hours}` : `${t.classes_taken || 20} Hours`,
         t.syllabus_completed || `Unit 1 & 2 Completed`
@@ -236,7 +236,7 @@ export async function generatePptx(summary, departmentName = 'Information Techno
     ivRows = summary.teaching_activities
       .filter(t => (t.class_assigned || '').includes('IV') || (t.class_assigned || '').includes('4'))
       .map((t, idx) => [
-        t.subject_code || `GE37${idx+1}`,
+        t.subject_code || `GE37${idx + 1}`,
         `${t.subject_name || 'Subject'} / ${t.instructor_name || 'Faculty'}`,
         t.teaching_hours ? `${t.teaching_hours}` : `${t.classes_taken || 20} Hours`,
         t.syllabus_completed || `Unit 1,2 Completed`
@@ -246,9 +246,9 @@ export async function generatePptx(summary, departmentName = 'Information Techno
     ivRows = [
       ['GE3791', 'Human Values and Ethics / Mrs. S. Ammu', '28 Hours', 'Unit 1,2,3 & Unit 4.1/4.5 Completed'],
       ['GE3751', 'Principles of Management / Mr. K. Muthuraman', '20 Hours', 'Unit 1,2 & 3.8/3.10 Completed'],
-      ['AI3021', 'OE 2 IT in Agriculture / Ms. S. Nivetha', '25 Hours', 'Unit 1,2 & 3.6/3.8 Completed'],
-      ['OME354', 'OE 3 Applied Design Thinking / Mrs A Arifa Banu', '23 Hours', 'Unit 1,2,3 & Unit 4.3/4.6 Completed'],
-      ['CRA332', 'OE 4 Drone Technologies / Ms. Ramaprabha', '23 Hours', 'Unit 1,2 & 3.6/3.8 Completed']
+      ['AI3021', 'OE2-IT IN AGRICULTURE SYSTEM / Ms. S. Nivetha', '25 Hours', 'Unit 1,2 & 3.6/3.8 Completed'],
+      ['OME354', 'OE3-APPLIED DESIGN THINKING / Mrs A Arifa Banu', '23 Hours', 'Unit 1,2,3 & Unit 4.3/4.6 Completed'],
+      ['CRA332', 'OE4 DRONE TECHNOLOGY / Ms. Ramaprabha', '23 Hours', 'Unit 1,2 & 3.6/3.8 Completed']
     ];
   }
   addSlideTable(slide4, ['Sub. Code', 'Course Name & Instructor', 'Hours Handled', 'Completion Status'], ivRows, [1.0, 3.6, 1.4, 3.2]);

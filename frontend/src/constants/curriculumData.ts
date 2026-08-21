@@ -86,9 +86,9 @@ export const ACADEMIC_CURRICULUM: SemesterGroup[] = [
     subjects: [
       { code: 'GE3791', name: 'Human Values and Ethics', full: 'GE3791 - Human Values and Ethics' },
       { code: 'GE3751', name: 'Principles of Management', full: 'GE3751 - Principles of Management' },
-      { code: 'AI3021', name: 'OE 2 IT in Agriculture System', full: 'AI3021 - OE 2 IT in Agriculture System' },
-      { code: 'OME354', name: 'OE 3 Applied Design Thinking', full: 'OME354 - OE 3 Applied Design Thinking' },
-      { code: 'CRA332', name: 'OE 4 Drone Technologies', full: 'CRA332 - OE 4 Drone Technologies' }
+      { code: 'AI3021', name: 'OE2-IT IN AGRICULTURE SYSTEM', full: 'AI3021 - OE2-IT IN AGRICULTURE SYSTEM' },
+      { code: 'OME354', name: 'OE3-APPLIED DESIGN THINKING', full: 'OME354 - OE3-APPLIED DESIGN THINKING' },
+      { code: 'CRA332', name: 'OE4 DRONE TECHNOLOGY', full: 'CRA332 - OE4 DRONE TECHNOLOGY' }
     ]
   }
 ];
@@ -165,13 +165,12 @@ const SUBJECT_TEMPLATES: { [key: string]: { code: string, name: string, type: st
   'IV YEAR_Semester 7': [
     { code: 'GE3791', name: 'Human Values and Ethics', type: 'Theory' },
     { code: 'GE3751', name: 'Principles of Management', type: 'Theory' },
-    { code: 'AI3021', name: 'OE 2 IT in Agriculture System', type: 'Theory' },
-    { code: 'IT3701', name: 'Advanced Web Technology', type: 'Theory' }
+    { code: 'AI3021', name: 'OE2-IT IN AGRICULTURE SYSTEM', type: 'Theory' },
+    { code: 'OME354', name: 'OE3-APPLIED DESIGN THINKING', type: 'Theory' },
+    { code: 'CRA332', name: 'OE4 DRONE TECHNOLOGY', type: 'Theory' }
   ],
   'IV YEAR_Semester 8': [
-    { code: 'IT3811', name: 'Project Work Phase II', type: 'Practical' },
-    { code: 'OME354', name: 'OE 3 Applied Design Thinking', type: 'Theory' },
-    { code: 'CRA332', name: 'OE 4 Drone Technologies', type: 'Theory' }
+    { code: 'IT3811', name: 'Project Work Phase II', type: 'Practical' }
   ]
 };
 
