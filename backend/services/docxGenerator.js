@@ -549,18 +549,24 @@ export async function generateDocx(report) {
   return await Packer.toBuffer(doc);
 }
 
-// Generate Department Monthly Summary Word Document (HOD Template A through H)
+// Generate Department Monthly Summary Word Document (Matching PDF & Excel Table Format)
 export async function generateDepartmentSummaryDocx(summary, departmentName) {
   const headerLogoBuffer = getHeaderLogoBuffer();
   const children = [];
 
+  const deptToDisplay = summary?.department_name || departmentName || 'Information Technology';
+  const startDate = summary?.start_date || '2026-07-06';
+  const endDate = summary?.end_date || '2026-08-07';
+  const academicYear = summary?.academic_year || '2026-2027';
+  const semester = summary?.semester || 'ODD';
+
   children.push(
     new Paragraph({
       children: [
-        new TextRun({ text: 'MONTHLY REPORT – ACADEMIC YEAR 2026 – 27 (ODD SEMESTER)', bold: true, color: '1E3A8A', size: 24 })
+        new TextRun({ text: `MONTHLY REPORT – ACADEMIC YEAR ${academicYear.replace('-', ' – ')} (${semester.toUpperCase()} SEMESTER)`, bold: true, color: '1E3A8A', size: 22 })
       ],
       alignment: AlignmentType.CENTER,
-      spacing: { before: 100, after: 60 }
+      spacing: { before: 80, after: 100 }
     })
   );
 
@@ -568,10 +574,10 @@ export async function generateDepartmentSummaryDocx(summary, departmentName) {
     rows: [
       new TableRow({
         children: [
-          new TableCell({ children: [new Paragraph({ children: [new TextRun({ text: 'Name of the Department:', bold: true, size: 18 })] })] }),
-          new TableCell({ children: [new Paragraph({ children: [new TextRun({ text: departmentName || 'Information Technology', size: 18 })] })] }),
-          new TableCell({ children: [new Paragraph({ children: [new TextRun({ text: 'Date Period:', bold: true, size: 18 })] })] }),
-          new TableCell({ children: [new Paragraph({ children: [new TextRun({ text: `${summary.start_date || '06.07.2026'} to ${summary.end_date || '07.08.2026'}`, size: 18 })] })] })
+          new TableCell({ children: [new Paragraph({ children: [new TextRun({ text: 'Name of Department:', bold: true, size: 18 })] })] }),
+          new TableCell({ children: [new Paragraph({ children: [new TextRun({ text: deptToDisplay, size: 18 })] })] }),
+          new TableCell({ children: [new Paragraph({ children: [new TextRun({ text: 'Reporting Period:', bold: true, size: 18 })] })] }),
+          new TableCell({ children: [new Paragraph({ children: [new TextRun({ text: `${startDate} to ${endDate}`, size: 18 })] })] })
         ]
       })
     ],
@@ -586,164 +592,127 @@ export async function generateDepartmentSummaryDocx(summary, departmentName) {
   children.push(metaTable);
   children.push(new Paragraph({ spacing: { after: 140 } }));
 
-  // A. Details of Syllabus completion (Theory and Lab)
+  // Extract isolated section arrays with deduplication
+  const teachingList = removeDuplicates(summary?.teaching_activities || [], ['subject_name', 'class_assigned']);
+  const eventsList = removeDuplicates(summary?.events || [], ['event_date', 'event_name']);
+  const fdpList = removeDuplicates(summary?.fdp_training || [], ['start_date', 'program_title']);
+  
+  const achievements = summary?.achievements || [];
+  const facultyNptelList = removeDuplicates(achievements.filter(a => a.category === 'Faculty NPTEL' || a.achievement_type === 'NPTEL Course'), ['achievement_title', 'description']);
+  const studentPartList = removeDuplicates(achievements.filter(a => a.category === 'Student NPTEL' || a.category === 'Student Event' || a.achievement_type === 'Student NPTEL' || a.achievement_type === 'Student Event'), ['achievement_title', 'description']);
+  
+  const researchList = removeDuplicates(summary?.research_activities || [], ['journal_paper', 'conference_paper', 'research_proposal', 'work_done']);
+  const workPlanList = removeDuplicates(summary?.future_plans || [], ['particulars', 'sno']);
+
+  // ---------------------------------------------------------
+  // Section A. Syllabus Completion (Theory and Laboratory)
+  // ---------------------------------------------------------
   children.push(createSectionTitle('A. Details of Syllabus completion (Theory and Lab)'));
 
-  // II YEAR
-  children.push(createSubSectionTitle('Class: II YEAR'));
-  children.push(createSubSectionTitle('Theory Courses'));
-  const iiTheoryHeaders = ['Sub. Code & Name of Course / Handled by', 'Total Hours Handled as on Aug 7, 2026', 'Unit Taken (TLP No./Total TLP)'];
-  const iiTheoryRows = [
-    ['MA25C02 - Discrete Mathematics / Dr. Sabeena', '25 Hours', 'Unit 1 & 2 Completed'],
-    ['IT25301 - Data Structures and Algorithms in C / Mrs. V. Brindha Devi', '20 Hours', 'Unit 1, Unit 2 & 3.4/3.12 Completed'],
-    ['IT25302 - Computer Organization & Architecture / Mrs. R Saraswathi', '20 Hours', 'Unit 1 & Unit 2 Completed'],
-    ['CS25303 - Operating Systems (T+L) / Mrs. R. Sangeetha', '20 Hours (Theory)\n8 Hours (Lab)', 'Theory: Unit 1, 2 & 3.1/3.9 Completed\nLab: Ex-4/8 Completed'],
-    ['CS25305 - Object Oriented Software Engineering / Mrs A Arifa Banu', '20 Hours', 'Unit 1 & 2 Completed'],
-    ['CS25302 - Java Programming / Mrs. Shalini L', '20 Hours', 'Unit 1 & 2 Completed']
-  ];
-  children.push(createStyledTable(iiTheoryHeaders, iiTheoryRows));
+  children.push(createSubSectionTitle('Syllabus Completion — Theory Courses'));
+  const theoryItems = teachingList.filter(t => (t.course_type || '').toLowerCase() !== 'laboratory');
+  const theoryHeaders = ['Sub. Code & Name / Handled by', 'Total Hours Handled', 'Unit Taken (TLP No./Total TLP)'];
+  const theoryRows = theoryItems.map(t => [
+    `${t.subject_name || 'Subject'}${t.instructor_name ? ' / ' + t.instructor_name : ''}`,
+    t.teaching_hours ? `${t.teaching_hours} Hours` : `${t.classes_taken || 0} Hours`,
+    t.current_unit || `Unit Completion: ${t.syllabus_pct || 0}%`
+  ]);
+  children.push(createStyledTable(theoryHeaders, theoryRows));
 
-  children.push(createSubSectionTitle('Laboratory Courses'));
-  const iiLabHeaders = ['Sub. Code & Name of Course / Handled by', 'Total Hours Handled as on Aug 7, 2026', 'Exp. Completed / Hours taken', 'Remaining Exp. / Hours required'];
-  const iiLabRows = [
-    ['IT25303 - Data Structures & Algorithms in C Lab / Mrs. V. Brindha Devi', '20 Hours', 'EX: 6/15', 'Ex: 8/15'],
-    ['CS25307 - Java Programming Laboratory / Mrs. L Shalini', '20 Hours', 'Ex: 5/10', 'Ex: 5/10']
-  ];
-  children.push(createStyledTable(iiLabHeaders, iiLabRows));
+  children.push(createSubSectionTitle('Syllabus Completion — Laboratory Courses'));
+  const labItems = teachingList.filter(t => (t.course_type || '').toLowerCase() === 'laboratory');
+  const labHeaders = ['Sub. Code & Name / Handled by', 'Total Hours Handled', 'Exp. Completed / Hours taken', 'Remaining Exp. / Hours required'];
+  const labRows = labItems.map(l => [
+    `${l.subject_name || 'Lab Course'}${l.instructor_name ? ' / ' + l.instructor_name : ''}`,
+    l.teaching_hours ? `${l.teaching_hours} Hours` : `${l.classes_taken || 0} Hours`,
+    l.exp_completed || 'Completed',
+    l.exp_remaining || 'Remaining'
+  ]);
+  children.push(createStyledTable(labHeaders, labRows));
 
-  // III YEAR
-  children.push(createSubSectionTitle('Class: III YEAR'));
-  children.push(createSubSectionTitle('Theory Courses'));
-  const iiiTheoryHeaders = ['Sub. Code & Name of Course / Handled by', 'Total Hours Handled as on Aug 7, 2026', 'Unit Taken (TLP No./Total TLP)'];
-  const iiiTheoryRows = [
-    ['CS3591 - Computer Networks (T+L) / Mrs. L Shalini', '15 Hours (Theory)\n10 Hours (Lab)', 'Theory: Unit 1, 2 Completed\nLab: Ex-5/10 Completed'],
-    ['IT3501 - Full Stack Web Development / Mrs. R Saraswathi', '20 Hours', 'Unit 1 & Unit 2 Completed'],
-    ['CS3551 - Distributed Computing / Mrs A Arifa Banu', '15 Hours', 'Unit 1 & Unit 2 Completed'],
-    ['CS3691 - Embedded Systems and IoT (T+L) / Dr. P. Rajkumar', '15 Hours (Theory)\n10 Hours (Lab)', 'Theory: Unit 1 & Unit 2 Completed\nLab: Ex-6/11 Completed'],
-    ['CCS335 - Cloud Computing (T+L) / Mrs. R. Sangeetha', '22 Hours (Theory)\n8 Hours (Lab)', 'Theory: Unit 1, 2 & 3.3/3.11 Completed\nLab: Ex-4/10 Completed'],
-    ['CCS361 - Robotic Process Automation (T+L) / Mrs. V. Brindha Devi', '18 Hours (Theory)\n10 Hours (Lab)', 'Theory: Unit 1, Unit 2 & 3.1/3.7 Completed\nLab: Ex-4/13 Completed'],
-    ['MX3084 - Disaster Risk Reduction and Management / Dr. A. Nivedha', '15 Hours', 'Unit 1 & Unit 2 Completed']
-  ];
-  children.push(createStyledTable(iiiTheoryHeaders, iiiTheoryRows));
+  // ---------------------------------------------------------
+  // Section B. Details of events organised
+  // ---------------------------------------------------------
+  children.push(createSectionTitle('B. Details of events organised (IV/Conference/Workshop/Seminar/Symposium/Other)'));
+  const eventsHeaders = ['S.No', 'Date of Event', 'Name of Event', 'Year / Students', 'Internal Coordinator', 'Resource Person Details'];
+  const eventRows = eventsList.map((e, idx) => [
+    String(idx + 1),
+    e.event_date || '—',
+    e.event_name || '—',
+    e.students_participated || '—',
+    e.role || deptToDisplay || '—',
+    e.description || '—'
+  ]);
+  children.push(createStyledTable(eventsHeaders, eventRows));
 
-  children.push(createSubSectionTitle('Laboratory Courses'));
-  const iiiLabHeaders = ['Sub. Code & Name of Course / Handled by', 'Total Hours Handled as on Aug 7, 2026', 'Exp. Completed / Hours taken', 'Remaining Exp. / Hours required'];
-  const iiiLabRows = [
-    ['IT3511 - Full Stack Web Development Lab / Mrs. R Saraswathi', '20 Hours', 'EX: 6/8', '2/8 & 1 Project']
-  ];
-  children.push(createStyledTable(iiiLabHeaders, iiiLabRows));
-
-  // IV YEAR
-  children.push(createSubSectionTitle('Class: IV YEAR'));
-  children.push(createSubSectionTitle('Theory Courses'));
-  const ivTheoryHeaders = ['Sub. Code & Name of Course / Handled by', 'Total Hours Handled as on Aug 7, 2026', 'Unit Taken (TLP No./Total TLP)'];
-  const ivTheoryRows = [
-    ['GE3791 - Human Values and Ethics / Mrs. S. Ammu', '28 Hours', 'Unit 1, 2, 3 & Unit 4.1/4.5 Completed'],
-    ['GE3751 - Principles of Management / Mr. K. Muthuraman', '20 Hours', 'Unit 1, 2 & 3.8/3.10 Completed'],
-    ['AI3021 - OE2-IT IN AGRICULTURE SYSTEM / Ms. S. Nivetha', '25 Hours', 'Unit 1, 2 & 3.6/3.8 Completed'],
-    ['OME354 - OE3-APPLIED DESIGN THINKING / Mrs A Arifa Banu', '23 Hours', 'Unit 1, 2, 3 & Unit 4.3/4.6 Completed'],
-    ['CRA332 - OE4 DRONE TECHNOLOGY / Ms. Ramaprabha', '23 Hours', 'Unit 1, 2 & 3.6/3.8 Completed']
-  ];
-  children.push(createStyledTable(ivTheoryHeaders, ivTheoryRows));
-
-  // B. Details of events organised
-  children.push(createSectionTitle('B. Details of events organised (IV/Conference/Workshop/ Seminar/Symposium/Other Events)'));
-  const eventsHeaders = ['S.No', 'Date of Event', 'Name of Event', 'Year / No. of Students Attended', 'Name of Internal Coordinator', 'Name & Detail of Resource Person'];
-  const eventsRows = [
-    ['1', '14.07.2026', 'WORKSHOP: Hands on networking', 'IV Year / 29 Students', 'Mrs. L. Shalini', 'Dr. P. Rajkumar'],
-    ['2', '16.07.2026', 'SEMINAR: Career Roadmap for Cyber Security & Ethical Hacking', '90 Students', 'Mrs A Arifa Banu', 'Mr. R Thamarai Selvam, Certified Ethical Hacker, UK'],
-    ['3', '24.07.2026', 'WORKSHOP: IT Infrastructure Essentials', 'IV Year (29) & III Year (61)', 'Mrs. L. Shalini', 'Dr. P. Rajkumar'],
-    ['4', '28.07.2026', 'WORKSHOP: Infrastructure & Systems', 'II Year / 59 Students', 'Mrs. L. Shalini', 'Dr. P. Rajkumar'],
-    ['5', '05.08.2026 to 07.08.2026', 'WORKSHOP: Cloud Computing Technologies', '71 Students', 'Mrs. R Saraswathi', 'Dr. R V Nataraj, Director, Campus Reign Software']
-  ];
-  children.push(createStyledTable(eventsHeaders, eventsRows));
-
-  // C. Details of Faculty Participation
-  children.push(createSectionTitle('C. Details of Faculty Participation (NPTEL Course/Workshop/ Seminar/FDP)'));
-  children.push(createSubSectionTitle('Workshop / Seminar / FDP'));
+  // ---------------------------------------------------------
+  // Section C. Details of Faculty Participation
+  // ---------------------------------------------------------
+  children.push(createSectionTitle('C. Details of Faculty Participation — Workshop / Seminar / FDP'));
   const fdpHeaders = ['S.No', 'Name of Faculty', 'Date of Event', 'Name of Event', 'Details of Event (Venue)'];
-  const fdpRows = [
-    ['1', 'Mrs. V Brindha Devi', '15.06.2026 – 17.06.2026', 'New Age Teaching Techniques', 'ICT Academy - MZCET (Autonomous)'],
-    ['', 'Mrs. V Brindha Devi', '22.06.2026 – 26.06.2026', 'AGENTIC AI SYSTEMS: From LLMs to Tiny LM', 'Kalasalingam Academy of Research and Education'],
-    ['', 'Mrs. V Brindha Devi', '08.06.2026 – 12.06.2026', 'Agentic AI: MCP, A2A & Enterprise AI Agents', 'JB Institute of Engg - ExcelR'],
-    ['2', 'Mrs. A Arifa Banu', '15.06.2026 – 17.06.2026', 'New Age Teaching Techniques', 'ICT Academy - MZCET (Autonomous)'],
-    ['', 'Mrs. A Arifa Banu', '22.06.2026 – 26.06.2026', 'AGENTIC AI SYSTEMS: From LLMs to Tiny LM', 'Kalasalingam Academy of Research and Education'],
-    ['3', 'Mrs R Sangeetha', '22.06.2026 – 26.06.2026', 'AGENTIC AI SYSTEMS: From LLMs to Tiny LM', 'Kalasalingam Academy of Research and Education'],
-    ['', 'Mrs R Sangeetha', '29.06.2026 – 04.07.2026', 'AI Driven Cyber Security', 'New Prince Bhavani College of Engineering'],
-    ['4', 'Mrs L Shalini', '22.06.2026 – 26.06.2026', 'AGENTIC AI SYSTEMS: From LLMs to Tiny LM', 'Kalasalingam Academy of Research and Education']
-  ];
+  const fdpRows = fdpList.map((f, idx) => [
+    String(idx + 1),
+    f.role || 'Faculty Member',
+    f.start_date || '—',
+    f.program_title || '—',
+    `${f.organizing_institution || ''} (${f.mode || 'Offline'})`
+  ]);
   children.push(createStyledTable(fdpHeaders, fdpRows));
 
-  children.push(createSubSectionTitle('NPTEL Course (Faculty)'));
+  children.push(createSectionTitle('C. Details of Faculty Participation — NPTEL Course'));
   const fNptelHeaders = ['S.No', 'Name of Faculty', 'Date (From – To)', 'Name of Course', 'Status / Result'];
-  const fNptelRows = [
-    ['1', 'Mrs. R Saraswathi', '20.07.2026 – 09.10.2026', 'Computer Architecture and Organization', 'Registered'],
-    ['2', 'Mrs. V Brindha Devi', '20.07.2026 – 09.10.2026', 'Mind Body and Wellness', 'Registered']
-  ];
+  const fNptelRows = facultyNptelList.map((fn, idx) => [
+    String(idx + 1),
+    fn.recognition || 'Faculty Member',
+    fn.description || '—',
+    fn.achievement_title || '—',
+    fn.level || 'Registered'
+  ]);
   children.push(createStyledTable(fNptelHeaders, fNptelRows));
 
-  // D. Details of Student Participation
-  children.push(createSectionTitle('D. Details of Student Participation (NPTEL Course)'));
-  const sNptelHeaders = ['S.No', 'Name of Mentor', 'Name of Student', 'Year', 'Name of Course', 'Status'];
-  const sNptelRows = [
-    ['1', 'Mrs A Arifa Banu', 'Aahela Parveen', 'IV', 'Data Analytics with Python', 'Elite'],
-    ['2', 'Mrs V Brindha Devi', 'J Nandhini', 'III', 'Cloud Computing', 'Elite with Silver'],
-    ['3', 'Mrs R Saraswathi', 'C Ramya', 'III', 'Cloud Computing', 'Elite'],
-    ['4', 'Mrs V Brindha Devi', 'S Sudharsana Devi', 'III', 'Cloud Computing', 'Elite'],
-    ['5', 'Dr Rajkumar', 'S Seran', 'III', 'Cloud Computing', 'Pass'],
-    ['6', 'Dr Rajkumar', 'S Pragadeesh', 'III', 'Cloud Computing', 'Elite'],
-    ['7', 'Mr K Muthu Raman', 'T Dinesh', 'II Year', 'Data Structures Using Python', 'Payment finished'],
-    ['8', 'Mrs R Saraswathi', 'R Joyslin Robena', 'II Year', 'Data Structures Using Python', 'Payment finished'],
-    ['9', 'Mrs V Brindha Devi', 'A Saniya Aasmin', 'II Year', 'Data Structures Using Python', 'Payment finished'],
-    ['10', 'Mrs R Sangeetha', 'J Rahmath Fahmidha', 'II Year', 'Data Structures Using Python', 'Payment finished'],
-    ['11', 'Mrs A Arifa Banu', 'M Deepika', 'II Year', 'Data Structures Using Python', 'Registered'],
-    ['12', '(Pending)', 'M Subabharathi', 'II Year', 'Data Structures Using Python', 'Registered']
-  ];
-  children.push(createStyledTable(sNptelHeaders, sNptelRows));
-  children.push(new Paragraph({ children: [new TextRun({ text: 'Note: Separate detailed tables attached for Internship.', italic: true, size: 16 })], spacing: { after: 100 } }));
+  // ---------------------------------------------------------
+  // Section D. Details of Student Participation & NPTEL
+  // ---------------------------------------------------------
+  children.push(createSectionTitle('D. Details of Student Participation & NPTEL'));
+  const sNptelHeaders = ['S.No', 'Name of Mentor', 'Name of Student', 'Category', 'Name of Course / Event', 'Status / Prize'];
+  const sPartRows = studentPartList.map((sp, idx) => [
+    String(idx + 1),
+    sp.recognition || 'Mentor',
+    sp.description || 'Student',
+    sp.achievement_type === 'Student Event' ? 'Event' : 'NPTEL',
+    sp.achievement_title || '—',
+    sp.level || 'Registered'
+  ]);
+  children.push(createStyledTable(sNptelHeaders, sPartRows));
 
-  // E & F. Feedback and CCM
-  children.push(createSectionTitle('E. Details of Academic Feedback - I'));
-  children.push(new Paragraph({ children: [new TextRun({ text: 'Note: Separate detailed table attached for Academic Feedback - I.', italic: true, size: 16 })], spacing: { after: 100 } }));
+  // ---------------------------------------------------------
+  // Section G. Details of Research Activity
+  // ---------------------------------------------------------
+  children.push(createSectionTitle('G. Details of Research Activity (Publication, Conference, Research proposal)'));
+  const researchHeaders = ['Category', 'Name of Faculty', 'Title & Venue Details', 'Status'];
+  const researchRows = researchList.map(r => [
+    r.work_done || 'Research',
+    r.progress_remarks || 'IT Faculty Team',
+    r.journal_paper || r.conference_paper || r.research_proposal || r.work_done || 'Details',
+    r.publication_status || 'In Progress'
+  ]);
+  children.push(createStyledTable(researchHeaders, researchRows));
 
-  children.push(createSectionTitle('F. Details of Class Committee Meeting (CCM)'));
-  children.push(new Paragraph({ children: [new TextRun({ text: 'Note: Separate detailed table attached for Class Committee Meeting (CCM).', italic: true, size: 16 })], spacing: { after: 100 } }));
+  // ---------------------------------------------------------
+  // Section H. Work Plan
+  // ---------------------------------------------------------
+  children.push(createSectionTitle('H. Work Plan (Next Month Department Targets)'));
+  const kpiHeaders = ['S.No', 'Particulars', 'Requirement Target', 'Conducted', 'To be Conducted'];
+  const workPlanRows = workPlanList.map((wp, idx) => [
+    String(wp.sno || (idx + 1)),
+    wp.particulars || wp.target_to_achieve || '—',
+    wp.requirement || '—',
+    wp.conducted || '0',
+    wp.to_be_conducted || 'Planned'
+  ]);
+  children.push(createStyledTable(kpiHeaders, workPlanRows));
 
-  // G. Details of Research Activity
-  children.push(createSectionTitle('G. Details of Research Activity (Publication, Conference, Research Proposal)'));
-  const resHeaders = ['Category', 'Name of Faculty', 'Title & Venue Details', 'Status'];
-  const resRows = [
-    ['Journal', 'IT Faculty Team', 'Submitted / Published Papers', 'In Progress'],
-    ['Conference', 'IT Faculty Team', 'National / International Conference Submissions', 'In Progress'],
-    ['Research Proposal', 'IT Faculty Team', 'Funding Proposals to Agencies', 'In Progress']
-  ];
-  children.push(createStyledTable(resHeaders, resRows));
-
-  // H. Work Plan (Next Month)
-  children.push(createSectionTitle('H. Work Plan (Next Month)'));
-  const kpiHeaders = ['S.No', 'Particulars', 'Requirement Target', 'Conducted during 2026-27 Odd', 'To be Conducted'];
-  const kpiRows = [
-    ['1', 'Certificate/VAC course', 'Min. 1 per Semester (UG & PG)', '0', '1 per class'],
-    ['2', 'Participation in certificate course', 'Above 50%', 'Ongoing', 'Target 50%+'],
-    ['3', 'Participation in internship', 'Above 50%', 'Ongoing', 'Target 50%+'],
-    ['4', 'Participation in IPT', 'Above 65%', 'Ongoing', 'Target 65%+'],
-    ['5', 'Industrial visit', 'Min. 1 per ACY (I & II Year)', '0', 'Planned'],
-    ['6', 'Student centric activities', 'Min. 1 activity per month per subject', 'Conducted', '1 per subject'],
-    ['7', '24 hours workshop', '3 per semester (UG), 1 per sem (PG)', '1 Conducted', '2 Planned'],
-    ['8', 'Symposium/Conference', 'Min. 1 per ACY', '0', 'Planned'],
-    ['9', 'Project expo', 'Min. 1 per ACY', '0', 'Planned'],
-    ['10', 'Technical competitions', 'Min. 5 per semester', 'Conducted', '5 Planned'],
-    ['11', 'Exam results (Internal & External)', '75% Dept, 85% Subject, 4 Rank Holders', 'On Track', 'Target 75%+'],
-    ['12', 'Publication (Journal & Conference)', 'Min. 1 per Sem / Faculty', 'In Progress', '1 Journal, 1 Conf'],
-    ['13', 'MoU with industry', 'Min. 2 New MoUs / 2 activities per MoU', 'Active', '2 Activities'],
-    ['14', 'Placement', 'Above 80%', 'On Track', 'Target 80%+'],
-    ['15', 'Staff participation (Workshop/FDP)', 'Min. 2 per ACY by each faculty (>5 days)', '2/2 (Completed)', 'Planned'],
-    ['16', 'NPTEL courses', 'One per faculty / 3 students per mentor', 'Active (Faculty: 4)', 'Mentor assigned'],
-    ['17', 'Students participation in events', '10 per class per semester', 'Active', '10 per class']
-  ];
-  children.push(createStyledTable(kpiHeaders, kpiRows));
-
-  // Signature
+  // Signature Line
   children.push(new Paragraph({ spacing: { before: 360 } }));
   children.push(
     new Paragraph({
@@ -779,7 +748,7 @@ export async function generateDepartmentSummaryDocx(summary, departmentName) {
           children: [
             new Paragraph({
               children: [
-                new TextRun({ text: `Mount Zion College of Engineering and Technology • ${departmentName} Department Monthly Report • Page ` }),
+                new TextRun({ text: `Mount Zion College of Engineering and Technology • ${deptToDisplay} Department Monthly Report • Page ` }),
                 new TextRun({ children: [PageNumber.CURRENT] })
               ],
               alignment: AlignmentType.CENTER

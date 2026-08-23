@@ -145,7 +145,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ currentTab = 'da
   };
 
   // Exporters for College level summary
-  const handleCollegeReportDownload = async (format: 'word' | 'ppt') => {
+  const handleCollegeReportDownload = async (format: 'word' | 'excel' | 'ppt') => {
     try {
       const url = `${apiBaseUrl}/analytics/college-monthly-summary/${format}?academic_year=${selectedAY}&semester=${selectedSem}&month=${selectedMonth}`;
       const res = await fetch(url, {
@@ -158,7 +158,8 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ currentTab = 'da
       const fileUrl = window.URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = fileUrl;
-      a.download = `MZCET_College_Monthly_Report_${selectedMonth}_${selectedAY}.${format === 'ppt' ? 'pptx' : 'docx'}`;
+      const extMap: Record<string, string> = { word: 'docx', excel: 'xlsx', ppt: 'pptx' };
+      a.download = `MZCET_College_Monthly_Report_${selectedMonth}_${selectedAY}.${extMap[format]}`;
       document.body.appendChild(a);
       a.click();
       a.remove();
@@ -168,7 +169,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ currentTab = 'da
   };
 
   // Exporters for Department level summary
-  const handleDeptReportDownload = async (deptId: number, deptName: string, format: 'word' | 'ppt') => {
+  const handleDeptReportDownload = async (deptId: number, deptName: string, format: 'pdf' | 'word' | 'excel' | 'ppt') => {
     try {
       const url = `${apiBaseUrl}/analytics/department-monthly-summary/${format}?department_id=${deptId}&academic_year=${selectedAY}&semester=${selectedSem}&month=${selectedMonth}`;
       const res = await fetch(url, {
@@ -181,12 +182,32 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ currentTab = 'da
       const fileUrl = window.URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = fileUrl;
-      a.download = `MZCET_${deptName.replace(/ /g, '_')}_Monthly_Report_${selectedMonth}_${selectedAY}.${format === 'ppt' ? 'pptx' : 'docx'}`;
+      const extMap: Record<string, string> = { pdf: 'pdf', word: 'docx', excel: 'xlsx', ppt: 'pptx' };
+      a.download = `MZCET_${deptName.replace(/ /g, '_')}_Monthly_Report_${selectedMonth}_${selectedAY}.${extMap[format]}`;
       document.body.appendChild(a);
       a.click();
       a.remove();
     } catch (err: any) {
       alert(`Export error: ${err.message}`);
+    }
+  };
+
+  const handleDownloadExcel = async (report: FullReport) => {
+    try {
+      const res = await fetch(`${apiBaseUrl}/reports/${report.id}/excel`, {
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      if (!res.ok) throw new Error('Download failed');
+      const blob = await res.blob();
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `StaffReport_${(report.staff_name || 'Staff').replace(/ /g, '_')}_${report.month}_${report.id}.xlsx`;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+    } catch (err: any) {
+      alert(`Excel export error: ${err.message}`);
     }
   };
 
@@ -285,15 +306,21 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ currentTab = 'da
         <div className="flex flex-wrap gap-2.5">
           <button 
             onClick={() => handleCollegeReportDownload('word')}
-            className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white font-extrabold text-xs py-2.5 px-4 rounded-xl shadow-md shadow-blue-900/20 transition-all hover:scale-105"
+            className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white font-extrabold text-xs py-2.5 px-3.5 rounded-xl shadow-md shadow-blue-900/20 transition-all hover:scale-105"
           >
-            <Download className="h-4 w-4" /> College Word Summary
+            <Download className="h-4 w-4" /> Word Summary
+          </button>
+          <button 
+            onClick={() => handleCollegeReportDownload('excel')}
+            className="flex items-center gap-2 bg-emerald-600 hover:bg-emerald-700 text-white font-extrabold text-xs py-2.5 px-3.5 rounded-xl shadow-md shadow-emerald-900/20 transition-all hover:scale-105"
+          >
+            <Download className="h-4 w-4" /> Excel Summary
           </button>
           <button 
             onClick={() => handleCollegeReportDownload('ppt')}
-            className="flex items-center gap-2 bg-amber-600 hover:bg-amber-700 text-white font-extrabold text-xs py-2.5 px-4 rounded-xl shadow-md shadow-amber-900/20 transition-all hover:scale-105"
+            className="flex items-center gap-2 bg-amber-600 hover:bg-amber-700 text-white font-extrabold text-xs py-2.5 px-3.5 rounded-xl shadow-md shadow-amber-900/20 transition-all hover:scale-105"
           >
-            <Download className="h-4 w-4" /> College PPT Summary
+            <Download className="h-4 w-4" /> PPT Summary
           </button>
         </div>
       </div>
@@ -575,18 +602,30 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ currentTab = 'da
                       <td className="p-4 font-bold text-emerald-600">{c.avgSyllabus}%</td>
                       <td className="p-4 font-bold text-indigo-600">{c.avgAttendance}%</td>
                       <td className="p-4 font-semibold text-slate-700">{c.eventsCount}</td>
-                      <td className="p-4 pr-6 text-right space-x-2">
+                      <td className="p-4 pr-6 text-right space-x-1.5">
+                        <button 
+                          onClick={() => handleDeptReportDownload(c.id, c.department_name, 'pdf')}
+                          className="text-rose-600 hover:text-rose-800 text-xs font-bold inline-flex items-center gap-1 bg-rose-50 px-2 py-1 rounded-lg border border-rose-200/50"
+                        >
+                          PDF
+                        </button>
                         <button 
                           onClick={() => handleDeptReportDownload(c.id, c.department_name, 'word')}
-                          className="text-blue-600 hover:text-blue-800 text-xs font-bold inline-flex items-center gap-1 bg-blue-50 px-2.5 py-1 rounded-lg border border-blue-200/50"
+                          className="text-blue-600 hover:text-blue-800 text-xs font-bold inline-flex items-center gap-1 bg-blue-50 px-2 py-1 rounded-lg border border-blue-200/50"
                         >
-                          <FileText className="h-3.5 w-3.5" /> Word
+                          DOCX
+                        </button>
+                        <button 
+                          onClick={() => handleDeptReportDownload(c.id, c.department_name, 'excel')}
+                          className="text-emerald-600 hover:text-emerald-800 text-xs font-bold inline-flex items-center gap-1 bg-emerald-50 px-2 py-1 rounded-lg border border-emerald-200/50"
+                        >
+                          XLSX
                         </button>
                         <button 
                           onClick={() => handleDeptReportDownload(c.id, c.department_name, 'ppt')}
-                          className="text-amber-600 hover:text-amber-800 text-xs font-bold inline-flex items-center gap-1 bg-amber-50 px-2.5 py-1 rounded-lg border border-amber-200/50"
+                          className="text-amber-600 hover:text-amber-800 text-xs font-bold inline-flex items-center gap-1 bg-amber-50 px-2 py-1 rounded-lg border border-amber-200/50"
                         >
-                          <FileCode className="h-3.5 w-3.5" /> PPTX
+                          PPTX
                         </button>
                       </td>
                     </tr>

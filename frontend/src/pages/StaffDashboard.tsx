@@ -154,6 +154,25 @@ export const StaffDashboard: React.FC<StaffDashboardProps> = ({
     }
   };
 
+  const handleDownloadExcel = async (report: FullReport) => {
+    try {
+      const res = await fetch(`${apiBaseUrl}/reports/${report.id}/excel`, {
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      if (!res.ok) throw new Error('Download failed');
+      const blob = await res.blob();
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `StaffReport_${(user?.name || 'Staff').replace(/ /g, '_')}_${report.month}_${report.id}.xlsx`;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+    } catch (err: any) {
+      alert(`Excel download error: ${err.message}`);
+    }
+  };
+
   const getStatusBadge = (status: string) => {
     switch (status) {
       case 'Approved':
@@ -313,9 +332,10 @@ export const StaffDashboard: React.FC<StaffDashboardProps> = ({
                   <th className="p-4">Period</th>
                   <th className="p-4">Status</th>
                   <th className="p-4">Submission Date</th>
-                  <th className="p-4">PDF Report</th>
-                  <th className="p-4">Word DOCX</th>
-                  <th className="p-4">PowerPoint</th>
+                  <th className="p-4">PDF</th>
+                  <th className="p-4">Word</th>
+                  <th className="p-4">Excel</th>
+                  <th className="p-4">PPTX</th>
                   <th className="p-4 pr-6 text-right">Actions</th>
                 </tr>
               </thead>
@@ -339,11 +359,11 @@ export const StaffDashboard: React.FC<StaffDashboardProps> = ({
                     </td>
                     <td className="p-4">
                       {report.status === 'Draft' ? (
-                        <span className="text-slate-300 text-xs font-semibold">Available on Submit</span>
+                        <span className="text-slate-300 text-xs font-semibold">—</span>
                       ) : (
                         <button 
                           onClick={() => handleDownloadPdf(report)}
-                          className="text-rose-600 hover:text-rose-800 font-extrabold inline-flex items-center gap-1 text-xs bg-rose-50 hover:bg-rose-100 px-2.5 py-1.5 rounded-lg transition-all border border-rose-200/60"
+                          className="text-rose-600 hover:text-rose-800 font-extrabold inline-flex items-center gap-1 text-xs bg-rose-50 hover:bg-rose-100 px-2 py-1 rounded-lg transition-all border border-rose-200/60"
                         >
                           <FileText className="h-3.5 w-3.5" /> PDF
                         </button>
@@ -351,11 +371,11 @@ export const StaffDashboard: React.FC<StaffDashboardProps> = ({
                     </td>
                     <td className="p-4">
                       {report.status === 'Draft' ? (
-                        <span className="text-slate-300 text-xs font-semibold">Available on Submit</span>
+                        <span className="text-slate-300 text-xs font-semibold">—</span>
                       ) : (
                         <button 
                           onClick={() => handleDownloadWord(report)}
-                          className="text-blue-600 hover:text-blue-800 font-extrabold inline-flex items-center gap-1 text-xs bg-blue-50 hover:bg-blue-100 px-2.5 py-1.5 rounded-lg transition-all border border-blue-200/60"
+                          className="text-blue-600 hover:text-blue-800 font-extrabold inline-flex items-center gap-1 text-xs bg-blue-50 hover:bg-blue-100 px-2 py-1 rounded-lg transition-all border border-blue-200/60"
                         >
                           <FileText className="h-3.5 w-3.5" /> DOCX
                         </button>
@@ -363,11 +383,23 @@ export const StaffDashboard: React.FC<StaffDashboardProps> = ({
                     </td>
                     <td className="p-4">
                       {report.status === 'Draft' ? (
-                        <span className="text-slate-300 text-xs font-semibold">Available on Submit</span>
+                        <span className="text-slate-300 text-xs font-semibold">—</span>
+                      ) : (
+                        <button 
+                          onClick={() => handleDownloadExcel(report)}
+                          className="text-emerald-600 hover:text-emerald-800 font-extrabold inline-flex items-center gap-1 text-xs bg-emerald-50 hover:bg-emerald-100 px-2 py-1 rounded-lg transition-all border border-emerald-200/60"
+                        >
+                          <FileCode className="h-3.5 w-3.5" /> XLSX
+                        </button>
+                      )}
+                    </td>
+                    <td className="p-4">
+                      {report.status === 'Draft' ? (
+                        <span className="text-slate-300 text-xs font-semibold">—</span>
                       ) : (
                         <button 
                           onClick={() => handleDownloadPptx(report)}
-                          className="text-amber-600 hover:text-amber-800 font-extrabold inline-flex items-center gap-1 text-xs bg-amber-50 hover:bg-amber-100 px-2.5 py-1.5 rounded-lg transition-all border border-amber-200/60"
+                          className="text-amber-600 hover:text-amber-800 font-extrabold inline-flex items-center gap-1 text-xs bg-amber-50 hover:bg-amber-100 px-2 py-1 rounded-lg transition-all border border-amber-200/60"
                         >
                           <FileCode className="h-3.5 w-3.5" /> PPTX
                         </button>

@@ -305,7 +305,6 @@ router.get('/department-monthly-summary/word', authenticateToken, authorizeRoles
     const { generateDepartmentSummaryDocx } = await import('../services/docxGenerator.js');
     const docxBuffer = await generateDepartmentSummaryDocx(summary, deptName);
 
-    // Naming convention: IT_Department_Report_August_2026.docx
     const cleanDept = deptName.toLowerCase().includes('information technology') ? 'IT' : deptName.replace(/[\s\.]+/g, '_');
     const year = academic_year.split('-')[0];
     const filename = `${cleanDept}_Department_Report_${month}_${year}.docx`;
@@ -316,6 +315,66 @@ router.get('/department-monthly-summary/word', authenticateToken, authorizeRoles
   } catch (error) {
     console.error('Dept Summary Word Gen Error:', error);
     res.status(500).json({ message: 'Failed to generate department summary word report' });
+  }
+});
+
+// 7b. Download Department Monthly Summary (PDF)
+router.get('/department-monthly-summary/pdf', authenticateToken, authorizeRoles('hod', 'admin'), async (req, res) => {
+  const departmentId = req.user.role === 'hod' ? req.user.department_id : req.query.department_id;
+  const { academic_year, semester, month } = req.query;
+
+  if (!departmentId || !month || !academic_year || !semester) {
+    return res.status(400).json({ message: 'Missing filter query parameters' });
+  }
+
+  try {
+    const summary = await computeDepartmentSummaryData(departmentId, academic_year, semester, month);
+    const dept = await db.getDepartmentById(Number(departmentId));
+    const deptName = dept ? dept.department_name : 'Department';
+
+    const { generateHodMonthlyReportPdf } = await import('../services/pdfGenerator.js');
+    const pdfBuffer = await generateHodMonthlyReportPdf(summary, deptName);
+
+    const cleanDept = deptName.toLowerCase().includes('information technology') ? 'IT' : deptName.replace(/[\s\.]+/g, '_');
+    const year = academic_year.split('-')[0];
+    const filename = `${cleanDept}_Department_Report_${month}_${year}.pdf`;
+
+    res.setHeader('Content-Type', 'application/pdf');
+    res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
+    res.send(pdfBuffer);
+  } catch (error) {
+    console.error('Dept Summary PDF Gen Error:', error);
+    res.status(500).json({ message: 'Failed to generate department summary pdf report' });
+  }
+});
+
+// 7c. Download Department Monthly Summary (Excel XLSX)
+router.get('/department-monthly-summary/excel', authenticateToken, authorizeRoles('hod', 'admin'), async (req, res) => {
+  const departmentId = req.user.role === 'hod' ? req.user.department_id : req.query.department_id;
+  const { academic_year, semester, month } = req.query;
+
+  if (!departmentId || !month || !academic_year || !semester) {
+    return res.status(400).json({ message: 'Missing filter query parameters' });
+  }
+
+  try {
+    const summary = await computeDepartmentSummaryData(departmentId, academic_year, semester, month);
+    const dept = await db.getDepartmentById(Number(departmentId));
+    const deptName = dept ? dept.department_name : 'Department';
+
+    const { generateHodMonthlyReportExcel } = await import('../services/excelGenerator.js');
+    const excelBuffer = await generateHodMonthlyReportExcel(summary, deptName);
+
+    const cleanDept = deptName.toLowerCase().includes('information technology') ? 'IT' : deptName.replace(/[\s\.]+/g, '_');
+    const year = academic_year.split('-')[0];
+    const filename = `${cleanDept}_Department_Report_${month}_${year}.xlsx`;
+
+    res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+    res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
+    res.send(excelBuffer);
+  } catch (error) {
+    console.error('Dept Summary Excel Gen Error:', error);
+    res.status(500).json({ message: 'Failed to generate department summary excel report' });
   }
 });
 
@@ -336,7 +395,6 @@ router.get('/department-monthly-summary/ppt', authenticateToken, authorizeRoles(
     const { generateDepartmentSummaryPptx } = await import('../services/pptxGenerator.js');
     const pptxBuffer = await generateDepartmentSummaryPptx(summary, deptName);
 
-    // Naming convention: IT_Department_Report_August_2026.pptx
     const cleanDept = deptName.toLowerCase().includes('information technology') ? 'IT' : deptName.replace(/[\s\.]+/g, '_');
     const year = academic_year.split('-')[0];
     const filename = `${cleanDept}_Department_Report_${month}_${year}.pptx`;
@@ -364,7 +422,6 @@ router.get('/college-monthly-summary/word', authenticateToken, authorizeRoles('a
     const { generateCollegeSummaryDocx } = await import('../services/docxGenerator.js');
     const docxBuffer = await generateCollegeSummaryDocx(summary);
 
-    // Naming convention: College_Monthly_Report_August_2026.docx
     const year = academic_year.split('-')[0];
     const filename = `College_Monthly_Report_${month}_${year}.docx`;
 
@@ -374,6 +431,32 @@ router.get('/college-monthly-summary/word', authenticateToken, authorizeRoles('a
   } catch (error) {
     console.error('College Summary Word Gen Error:', error);
     res.status(500).json({ message: 'Failed to generate college summary word report' });
+  }
+});
+
+// 9b. Download College Monthly Summary (Excel XLSX)
+router.get('/college-monthly-summary/excel', authenticateToken, authorizeRoles('admin'), async (req, res) => {
+  const { academic_year, semester, month } = req.query;
+
+  if (!month || !academic_year || !semester) {
+    return res.status(400).json({ message: 'Missing filter query parameters' });
+  }
+
+  try {
+    const summary = await computeCollegeSummaryData(academic_year, semester, month);
+
+    const { generateCollegeSummaryExcel } = await import('../services/excelGenerator.js');
+    const excelBuffer = await generateCollegeSummaryExcel(summary);
+
+    const year = academic_year.split('-')[0];
+    const filename = `College_Monthly_Report_${month}_${year}.xlsx`;
+
+    res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+    res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
+    res.send(excelBuffer);
+  } catch (error) {
+    console.error('College Summary Excel Gen Error:', error);
+    res.status(500).json({ message: 'Failed to generate college summary excel report' });
   }
 });
 
@@ -391,7 +474,6 @@ router.get('/college-monthly-summary/ppt', authenticateToken, authorizeRoles('ad
     const { generateCollegeSummaryPptx } = await import('../services/pptxGenerator.js');
     const pptxBuffer = await generateCollegeSummaryPptx(summary);
 
-    // Naming convention: College_Monthly_Report_August_2026.pptx
     const year = academic_year.split('-')[0];
     const filename = `College_Monthly_Report_${month}_${year}.pptx`;
 

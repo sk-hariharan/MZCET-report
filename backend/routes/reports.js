@@ -562,5 +562,40 @@ router.get('/:id/pdf', authenticateToken, async (req, res) => {
   }
 });
 
+// 12. Download Excel Report
+router.get('/:id/excel', authenticateToken, async (req, res) => {
+  const reportId = Number(req.params.id);
+
+  try {
+    const report = await db.getReportById(reportId);
+    if (!report) {
+      return res.status(404).json({ message: 'Report not found' });
+    }
+
+    if (req.user.role === 'staff' && report.staff_id !== req.user.id) {
+      return res.status(403).json({ message: 'You do not have permission to download this report' });
+    }
+
+    if (req.user.role === 'hod' && report.department_id !== req.user.department_id) {
+      return res.status(403).json({ message: 'You do not have permission to download reports from another department' });
+    }
+
+    const { generateStaffReportExcel } = await import('../services/excelGenerator.js');
+    const excelBuffer = await generateStaffReportExcel(report);
+
+    const cleanStaff = report.staff_name ? report.staff_name.replace(/[\s\.]+/g, '_') : 'Staff';
+    const cleanDept = report.department_name ? (report.department_name.toLowerCase().includes('information technology') ? 'IT' : report.department_name.replace(/[\s\.]+/g, '_')) : 'Dept';
+    const year = report.academic_year ? report.academic_year.split('-')[0] : new Date().getFullYear();
+    const filename = `StaffReport_${cleanStaff}_${cleanDept}_${report.month}_${year}.xlsx`;
+
+    res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+    res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
+    res.send(excelBuffer);
+  } catch (error) {
+    console.error('Excel Export Error:', error);
+    res.status(500).json({ message: 'Failed to generate Excel document' });
+  }
+});
+
 export default router;
 

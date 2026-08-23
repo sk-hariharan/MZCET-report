@@ -1,6 +1,7 @@
-import { generateDocx } from './services/docxGenerator.js';
+import { generateDocx, generateDepartmentSummaryDocx } from './services/docxGenerator.js';
 import { generatePptx } from './services/pptxGenerator.js';
-import { generatePdf } from './services/pdfGenerator.js';
+import { generatePdf, generateHodMonthlyReportPdf } from './services/pdfGenerator.js';
+import { generateHodMonthlyReportExcel, generateStaffReportExcel } from './services/excelGenerator.js';
 
 const mockReport = {
   id: 999,
@@ -55,13 +56,25 @@ async function testFormats() {
     const docxBuf = await generateDocx(mockReport);
     console.log('✅ Word (.docx) generated successfully. Size:', docxBuf.length, 'bytes');
 
+    const summaryDocxBuf = await generateDepartmentSummaryDocx(mockReport, 'Information Technology');
+    console.log('✅ Department Summary Word (.docx) generated successfully. Size:', summaryDocxBuf.length, 'bytes');
+
     const pptxBuf = await generatePptx(mockReport);
     console.log('✅ PowerPoint (.pptx) generated successfully. Size:', pptxBuf.length, 'bytes');
 
     const pdfBuf = await generatePdf(mockReport);
     console.log('✅ PDF (.pdf) generated successfully. Size:', pdfBuf.length, 'bytes');
 
-    console.log('\n🎉 ALL FORMATS (Word, PPTX, PDF) ARE FULLY FUNCTIONAL AND VERIFIED!');
+    const summaryPdfBuf = await generateHodMonthlyReportPdf(mockReport, 'Information Technology');
+    console.log('✅ Department Summary PDF (.pdf) generated successfully. Size:', summaryPdfBuf.length, 'bytes');
+
+    const excelBuf = await generateStaffReportExcel(mockReport);
+    console.log('✅ Excel (.xlsx) staff report generated successfully. Size:', excelBuf.length, 'bytes');
+
+    const summaryExcelBuf = await generateHodMonthlyReportExcel(mockReport, 'Information Technology');
+    console.log('✅ Department Summary Excel (.xlsx) generated successfully. Size:', summaryExcelBuf.length, 'bytes');
+
+    console.log('\n🎉 ALL 4 EXPORT FORMATS (PDF, Word, Excel, PPTX) ARE FULLY FUNCTIONAL AND VERIFIED!');
   } catch (err) {
     console.error('❌ Verification failed:', err);
     process.exit(1);

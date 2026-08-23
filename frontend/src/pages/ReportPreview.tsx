@@ -135,6 +135,26 @@ export const ReportPreview: React.FC<ReportPreviewProps> = ({ reportId, onBack, 
     }
   };
 
+  const handleDownloadExcel = async () => {
+    if (!report) return;
+    try {
+      const res = await fetch(`${apiBaseUrl}/reports/${report.id}/excel`, {
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      if (!res.ok) throw new Error('Download failed');
+      const blob = await res.blob();
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `StaffReport_${(report.staff_name || 'Staff').replace(/ /g, '_')}_${report.month}_${report.id}.xlsx`;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+    } catch (err: any) {
+      alert(`Excel download error: ${err.message}`);
+    }
+  };
+
   const getStatusBadge = (status: string) => {
     switch (status) {
       case 'Approved':
@@ -195,7 +215,7 @@ export const ReportPreview: React.FC<ReportPreviewProps> = ({ reportId, onBack, 
         </div>
 
         {/* Action buttons */}
-        <div className="flex items-center gap-2">
+        <div className="flex flex-wrap items-center gap-2">
           {report.status !== 'Draft' && (
             <>
               <button
@@ -211,10 +231,16 @@ export const ReportPreview: React.FC<ReportPreviewProps> = ({ reportId, onBack, 
                 <FileText className="h-4 w-4" /> Word DOCX
               </button>
               <button
+                onClick={handleDownloadExcel}
+                className="flex items-center gap-2 bg-emerald-600 hover:bg-emerald-700 text-white font-extrabold text-xs py-2.5 px-4 rounded-xl shadow-md shadow-emerald-900/20 transition-all hover:scale-105"
+              >
+                <FileCode className="h-4 w-4" /> Excel XLSX
+              </button>
+              <button
                 onClick={handleDownloadPptx}
                 className="flex items-center gap-2 bg-amber-600 hover:bg-amber-700 text-white font-extrabold text-xs py-2.5 px-4 rounded-xl shadow-md shadow-amber-900/20 transition-all hover:scale-105"
               >
-                <FileCode className="h-4 w-4" /> PPTX Presentation
+                <FileCode className="h-4 w-4" /> PPTX
               </button>
             </>
           )}

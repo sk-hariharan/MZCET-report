@@ -168,6 +168,48 @@ export const HodDashboard: React.FC<HodDashboardProps> = ({ onReviewReport, onPr
     }
   };
 
+  const handleDownloadExcel = async (report: FullReport) => {
+    try {
+      const res = await fetch(`${apiBaseUrl}/reports/${report.id}/excel`, {
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      if (!res.ok) throw new Error('Download failed');
+      const blob = await res.blob();
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `StaffReport_${(report.staff_name || 'Staff').replace(/ /g, '_')}_${report.month}_${report.id}.xlsx`;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+    } catch (err: any) {
+      alert(`Excel export error: ${err.message}`);
+    }
+  };
+
+  const handleDeptSummaryDownload = async (format: 'pdf' | 'word' | 'excel' | 'ppt') => {
+    try {
+      const deptId = user?.department_id || 1;
+      const url = `${apiBaseUrl}/analytics/department-monthly-summary/${format}?department_id=${deptId}&academic_year=2026-2027&semester=ODD&month=August`;
+      const res = await fetch(url, {
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      if (!res.ok) throw new Error(`Failed to generate department ${format.toUpperCase()} report`);
+      const blob = await res.blob();
+      const fileUrl = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = fileUrl;
+      const extMap: Record<string, string> = { pdf: 'pdf', word: 'docx', excel: 'xlsx', ppt: 'pptx' };
+      const cleanDept = (user?.department_name || 'IT').replace(/ /g, '_');
+      a.download = `${cleanDept}_Department_Monthly_Report_August_2026.${extMap[format]}`;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+    } catch (err: any) {
+      alert(`Export error: ${err.message}`);
+    }
+  };
+
   const getStatusBadge = (status: string) => {
     switch (status) {
       case 'Approved':
@@ -206,12 +248,38 @@ export const HodDashboard: React.FC<HodDashboardProps> = ({ onReviewReport, onPr
           <h2 className="text-2xl font-black text-white">Department Head Dashboard</h2>
           <p className="text-xs text-blue-300 font-bold uppercase tracking-wider mt-1">{user?.department_name || 'Department of Information Technology'}</p>
         </div>
-        <button 
-          onClick={fetchHodData}
-          className="inline-flex items-center gap-1.5 bg-white/10 hover:bg-white/20 text-white text-xs font-bold px-3.5 py-2 rounded-xl transition-all border border-white/10 backdrop-blur-md"
-        >
-          <RefreshCw className="h-3.5 w-3.5" /> Refresh Data
-        </button>
+        <div className="flex flex-wrap items-center gap-2">
+          <button 
+            onClick={() => handleDeptSummaryDownload('pdf')}
+            className="inline-flex items-center gap-1.5 bg-rose-600 hover:bg-rose-700 text-white text-xs font-bold px-3 py-2 rounded-xl transition-all shadow-sm"
+          >
+            Export PDF
+          </button>
+          <button 
+            onClick={() => handleDeptSummaryDownload('word')}
+            className="inline-flex items-center gap-1.5 bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold px-3 py-2 rounded-xl transition-all shadow-sm"
+          >
+            Export Word
+          </button>
+          <button 
+            onClick={() => handleDeptSummaryDownload('excel')}
+            className="inline-flex items-center gap-1.5 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold px-3 py-2 rounded-xl transition-all shadow-sm"
+          >
+            Export Excel
+          </button>
+          <button 
+            onClick={() => handleDeptSummaryDownload('ppt')}
+            className="inline-flex items-center gap-1.5 bg-amber-600 hover:bg-amber-700 text-white text-xs font-bold px-3 py-2 rounded-xl transition-all shadow-sm"
+          >
+            Export PPT
+          </button>
+          <button 
+            onClick={fetchHodData}
+            className="inline-flex items-center gap-1.5 bg-white/10 hover:bg-white/20 text-white text-xs font-bold px-3 py-2 rounded-xl transition-all border border-white/10 backdrop-blur-md"
+          >
+            <RefreshCw className="h-3.5 w-3.5" /> Refresh
+          </button>
+        </div>
       </div>
 
       {error && (
@@ -262,74 +330,64 @@ export const HodDashboard: React.FC<HodDashboardProps> = ({ onReviewReport, onPr
         </div>
       )}
 
-      {/* Review Queue */}
-      <div className="bg-white border border-slate-200/80 rounded-3xl shadow-sm overflow-hidden">
-        <div className="p-6 border-b bg-slate-50/70 flex justify-between items-center">
+      {/* Pending Queue Section */}
+      <div className="bg-white border border-slate-200/80 rounded-3xl p-6 shadow-sm space-y-4">
+        <div className="flex justify-between items-center border-b border-slate-100 pb-4">
           <div>
-            <h3 className="font-black text-slate-800 text-base">Pending Submissions Review Queue ({pendingQueue.length})</h3>
-            <p className="text-xs text-slate-500 mt-0.5">Inspect faculty reports, provide structured review comments, and approve or reject submissions</p>
+            <h3 className="text-lg font-black text-slate-900">Reports Submitted for Review</h3>
+            <p className="text-xs text-slate-500 font-medium">Pending HOD approval or correction verification</p>
           </div>
-          {pendingQueue.length > 0 && (
-            <span className="px-3 py-1 rounded-full text-xs font-black bg-blue-100 text-blue-800 animate-pulse">
-              Action Needed
-            </span>
-          )}
+          <span className="bg-blue-100 text-blue-800 text-xs font-black px-3 py-1 rounded-full">
+            {pendingQueue.length} Pending
+          </span>
         </div>
 
         {pendingQueue.length === 0 ? (
-          <div className="p-12 text-center text-slate-400 text-sm space-y-1">
-            <p className="font-bold text-slate-600">All submissions up to date!</p>
-            <p className="text-xs">No pending reports awaiting your review at this time.</p>
+          <div className="text-center py-12 bg-slate-50 rounded-2xl border border-dashed border-slate-200">
+            <Clock className="h-10 w-10 text-slate-300 mx-auto mb-2" />
+            <p className="text-sm font-bold text-slate-600">No pending reports for approval</p>
+            <p className="text-xs text-slate-400 font-medium mt-1">All submitted faculty reports have been reviewed.</p>
           </div>
         ) : (
-          <div className="overflow-x-auto">
-            <table className="w-full text-left text-sm border-collapse">
-              <thead>
-                <tr className="bg-slate-50 text-[10px] font-black text-slate-400 uppercase tracking-wider border-b">
-                  <th className="p-4 pl-6">Faculty Name</th>
-                  <th className="p-4">Report Type</th>
-                  <th className="p-4">Period</th>
-                  <th className="p-4">Status</th>
-                  <th className="p-4">Submitted Date</th>
-                  <th className="p-4 pr-6 text-right">Review Action</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-slate-100 text-slate-700">
-                {pendingQueue.map((report) => (
-                  <tr key={report.id} className="hover:bg-blue-50/40 transition-colors">
-                    <td className="p-4 pl-6">
-                      <p className="font-extrabold text-slate-900">{report.staff_name}</p>
-                      <p className="text-[10px] font-bold text-slate-400">{report.staff_code || 'Faculty'}</p>
-                    </td>
-                    <td className="p-4">
-                      <span className={`text-[10px] font-black uppercase px-2 py-0.5 rounded-md ${
-                        report.report_type === 'monthly' ? 'bg-indigo-100 text-indigo-700' : 'bg-blue-100 text-blue-700'
-                      }`}>
-                        {report.report_type}
-                      </span>
-                    </td>
-                    <td className="p-4 font-bold text-slate-800 text-xs">{report.month} {report.week_number ? `(W${report.week_number})` : ''}</td>
-                    <td className="p-4">{getStatusBadge(report.status)}</td>
-                    <td className="p-4 text-xs font-semibold text-slate-500">{report.submitted_at ? new Date(report.submitted_at).toLocaleDateString() : '—'}</td>
-                    <td className="p-4 pr-6 text-right space-x-2">
-                      <button 
-                        onClick={() => onReviewReport(report.id)}
-                        className="bg-blue-600 hover:bg-blue-700 text-white font-black text-xs py-2 px-4 rounded-xl shadow-md shadow-blue-900/20 transition-all hover:scale-105 active:scale-95"
-                      >
-                        Review & Action
-                      </button>
-                      <button 
-                        onClick={() => handleDeleteReport(report.id)}
-                        className="text-rose-600 hover:text-rose-800 p-2 hover:bg-rose-50 rounded-xl inline-flex items-center gap-1 text-xs font-bold transition-colors"
-                        title="Delete Report"
-                      >
-                        <Trash2 className="h-4 w-4" /> Delete
-                      </button>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {pendingQueue.map((report) => (
+              <div key={report.id} className="border border-slate-200 rounded-2xl p-5 hover:border-blue-300 transition-all space-y-4 bg-slate-50/50">
+                <div className="flex justify-between items-start">
+                  <div>
+                    <h4 className="font-bold text-slate-900 text-base">{report.staff_name}</h4>
+                    <p className="text-xs text-slate-500 font-medium">{report.designation} • {report.department_name}</p>
+                  </div>
+                  {getStatusBadge(report.status)}
+                </div>
+
+                <div className="bg-white p-3 rounded-xl border border-slate-100 grid grid-cols-2 gap-2 text-xs">
+                  <div>
+                    <span className="text-[10px] text-slate-400 font-bold uppercase block">Report Period</span>
+                    <span className="font-bold text-slate-700">{report.month} {report.week_number ? `(W${report.week_number})` : ''}</span>
+                  </div>
+                  <div>
+                    <span className="text-[10px] text-slate-400 font-bold uppercase block">Type</span>
+                    <span className="font-bold text-slate-700 uppercase">{report.report_type}</span>
+                  </div>
+                </div>
+
+                <div className="flex items-center gap-2 pt-2 border-t border-slate-200/60">
+                  <button 
+                    onClick={() => onReviewReport(report.id)}
+                    className="flex-1 bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs py-2 rounded-xl transition-all shadow-sm text-center"
+                  >
+                    Review & Verify
+                  </button>
+                  <button 
+                    onClick={() => onPreviewReport(report.id)}
+                    className="p-2 hover:bg-slate-200 rounded-xl text-slate-600 transition-colors"
+                    title="View Full Report Details"
+                  >
+                    <Eye className="h-4 w-4" />
+                  </button>
+                </div>
+              </div>
+            ))}
           </div>
         )}
       </div>
@@ -367,15 +425,19 @@ export const HodDashboard: React.FC<HodDashboardProps> = ({ onReviewReport, onPr
         </div>
       )}
 
-      {/* Department Reports History */}
-      <div className="bg-white border border-slate-200/80 rounded-3xl shadow-sm overflow-hidden">
-        <div className="p-6 border-b bg-slate-50/70">
-          <h3 className="font-black text-slate-800 text-base">Department Reports Directory</h3>
-          <p className="text-xs text-slate-500 font-medium mt-0.5">Listing of all reports created in this department with direct Word & PPTX export</p>
+      {/* All Department Reports Table */}
+      <div className="bg-white border border-slate-200/80 rounded-3xl p-6 shadow-sm space-y-4">
+        <div className="flex justify-between items-center border-b border-slate-100 pb-4">
+          <div>
+            <h3 className="text-lg font-black text-slate-900">All Department Reports</h3>
+            <p className="text-xs text-slate-500 font-medium">History of all faculty submissions in your department</p>
+          </div>
         </div>
 
         {allReports.length === 0 ? (
-          <div className="p-12 text-center text-slate-400">No reports found in department history.</div>
+          <div className="text-center py-12 text-slate-400 font-semibold text-sm">
+            No records found for this department.
+          </div>
         ) : (
           <div className="overflow-x-auto">
             <table className="w-full text-left text-sm border-collapse">
@@ -385,8 +447,9 @@ export const HodDashboard: React.FC<HodDashboardProps> = ({ onReviewReport, onPr
                   <th className="p-4">Period</th>
                   <th className="p-4">Type</th>
                   <th className="p-4">Status</th>
-                  <th className="p-4">PDF Report</th>
-                  <th className="p-4">Word DOCX</th>
+                  <th className="p-4">PDF</th>
+                  <th className="p-4">Word</th>
+                  <th className="p-4">Excel</th>
                   <th className="p-4">PPTX</th>
                   <th className="p-4 pr-6 text-right">Actions</th>
                 </tr>
@@ -410,7 +473,7 @@ export const HodDashboard: React.FC<HodDashboardProps> = ({ onReviewReport, onPr
                       ) : (
                         <button 
                           onClick={() => handleDownloadPdf(report)}
-                          className="text-xs font-bold text-rose-600 hover:text-rose-800 bg-rose-50 px-2.5 py-1 rounded-lg border border-rose-200/50"
+                          className="text-xs font-bold text-rose-600 hover:text-rose-800 bg-rose-50 px-2 py-1 rounded-lg border border-rose-200/50"
                         >
                           PDF
                         </button>
@@ -422,7 +485,7 @@ export const HodDashboard: React.FC<HodDashboardProps> = ({ onReviewReport, onPr
                       ) : (
                         <button 
                           onClick={() => handleDownloadWord(report)}
-                          className="text-xs font-bold text-blue-600 hover:text-blue-800 bg-blue-50 px-2.5 py-1 rounded-lg border border-blue-200/50"
+                          className="text-xs font-bold text-blue-600 hover:text-blue-800 bg-blue-50 px-2 py-1 rounded-lg border border-blue-200/50"
                         >
                           DOCX
                         </button>
@@ -433,8 +496,20 @@ export const HodDashboard: React.FC<HodDashboardProps> = ({ onReviewReport, onPr
                         <span className="text-slate-300 text-xs">—</span>
                       ) : (
                         <button 
+                          onClick={() => handleDownloadExcel(report)}
+                          className="text-xs font-bold text-emerald-600 hover:text-emerald-800 bg-emerald-50 px-2 py-1 rounded-lg border border-emerald-200/50"
+                        >
+                          XLSX
+                        </button>
+                      )}
+                    </td>
+                    <td className="p-4">
+                      {report.status === 'Draft' ? (
+                        <span className="text-slate-300 text-xs">—</span>
+                      ) : (
+                        <button 
                           onClick={() => handleDownloadPptx(report)}
-                          className="text-xs font-bold text-amber-600 hover:text-amber-800 bg-amber-50 px-2.5 py-1 rounded-lg border border-amber-200/50"
+                          className="text-xs font-bold text-amber-600 hover:text-amber-800 bg-amber-50 px-2 py-1 rounded-lg border border-amber-200/50"
                         >
                           PPTX
                         </button>
@@ -443,16 +518,16 @@ export const HodDashboard: React.FC<HodDashboardProps> = ({ onReviewReport, onPr
                     <td className="p-4 pr-6 text-right space-x-1">
                       <button 
                         onClick={() => onPreviewReport(report.id)}
-                        className="text-slate-600 hover:text-slate-900 font-bold inline-flex items-center gap-1 text-xs hover:bg-slate-100 px-3 py-1.5 rounded-xl transition-all"
+                        className="text-slate-600 hover:text-slate-900 font-bold inline-flex items-center gap-1 text-xs hover:bg-slate-100 px-2.5 py-1 rounded-xl transition-all"
                       >
-                        <Eye className="h-4 w-4" /> View Details
+                        <Eye className="h-3.5 w-3.5" /> View
                       </button>
                       <button 
                         onClick={() => handleDeleteReport(report.id)}
-                        className="text-rose-600 hover:text-rose-800 p-1.5 hover:bg-rose-50 rounded-xl inline-flex items-center gap-1 text-xs font-bold transition-colors"
+                        className="text-rose-600 hover:text-rose-800 p-1 hover:bg-rose-50 rounded-xl inline-flex items-center gap-1 text-xs font-bold transition-colors"
                         title="Delete Report"
                       >
-                        <Trash2 className="h-4 w-4" /> Delete
+                        <Trash2 className="h-3.5 w-3.5" />
                       </button>
                     </td>
                   </tr>
