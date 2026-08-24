@@ -49,6 +49,18 @@ const MainLayout: React.FC = () => {
   }
 
   // Handlers for report navigation
+  const handleTabSelect = (tab: string) => {
+    setPreviewReportId(null);
+    if (tab === 'new_weekly') {
+      setActiveReportType('weekly');
+      setEditReportId(null);
+    } else if (tab === 'new_monthly') {
+      setActiveReportType('monthly');
+      setEditReportId(null);
+    }
+    setCurrentTab(tab);
+  };
+
   const handleCreateReport = (type: 'weekly' | 'monthly') => {
     setActiveReportType(type);
     setEditReportId(null);
@@ -93,9 +105,14 @@ const MainLayout: React.FC = () => {
 
     // 2. Report Creation / Edit Stepper
     if (currentTab === 'new_weekly' || currentTab === 'new_monthly') {
+      const effectiveType: 'weekly' | 'monthly' = currentTab === 'new_weekly' 
+        ? 'weekly' 
+        : (currentTab === 'new_monthly' ? 'monthly' : activeReportType);
+        
       return (
         <MultiStepReportForm 
-          reportType={currentTab === 'new_weekly' ? 'weekly' : activeReportType}
+          key={`${currentTab}-${editReportId || 'new'}`}
+          reportType={effectiveType}
           onCancel={handleCancelForm}
           editReportId={editReportId}
         />
@@ -148,7 +165,7 @@ const MainLayout: React.FC = () => {
       {/* Sidebar Navigation */}
       <Sidebar 
         currentTab={currentTab} 
-        setCurrentTab={(tab) => { setPreviewReportId(null); setCurrentTab(tab); }} 
+        setCurrentTab={handleTabSelect} 
         mobileMenuOpen={mobileMenuOpen}
         setMobileMenuOpen={setMobileMenuOpen}
       />

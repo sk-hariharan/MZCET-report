@@ -341,6 +341,10 @@ export const MultiStepReportForm = ({ reportType, onCancel, editReportId = null 
         setErrorMsg('Please enter both Reporting Start Date and End Date.');
         return false;
       }
+      if (reportType === 'weekly' && !meta.week_number) {
+        setErrorMsg('Please enter the Week Number for this weekly report.');
+        return false;
+      }
     }
     if (step === 9) {
       for (const w of weeks) {
@@ -596,7 +600,7 @@ export const MultiStepReportForm = ({ reportType, onCancel, editReportId = null 
         return (
           <div className="space-y-6">
             <h3 className="text-lg font-extrabold text-slate-900 border-b pb-2 flex items-center gap-2">
-              <Calendar className="h-5 w-5 text-blue-600" /> Step 1: Basic Report Parameters
+              <Calendar className="h-5 w-5 text-blue-600" /> Step 1: Basic Report Parameters ({reportType === 'weekly' ? 'Weekly Report' : 'Monthly Report'})
             </h3>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div>
@@ -607,6 +611,16 @@ export const MultiStepReportForm = ({ reportType, onCancel, editReportId = null 
                 <label className="block text-xs font-bold text-slate-500 uppercase mb-1">Faculty / Staff Name</label>
                 <input type="text" className="w-full bg-slate-100 border p-3 rounded-xl text-slate-700 font-bold" value={user?.name || ''} disabled />
               </div>
+              {reportType === 'weekly' && (
+                <div>
+                  <label className="block text-xs font-bold text-slate-500 uppercase mb-1">Week Number <span className="text-red-500">*</span></label>
+                  <input type="number" min="1" max="52" className="w-full border p-3 rounded-xl text-slate-800 font-semibold focus:ring-2 focus:ring-blue-500 outline-none"
+                    placeholder="e.g. 1"
+                    value={meta.week_number}
+                    onChange={e => setMeta({ ...meta, week_number: e.target.value })}
+                  />
+                </div>
+              )}
               <div>
                 <label className="block text-xs font-bold text-slate-500 uppercase mb-1">Academic Year</label>
                 <select className="w-full border p-3 rounded-xl text-slate-800 font-semibold focus:ring-2 focus:ring-blue-500 outline-none"
@@ -1668,7 +1682,7 @@ export const MultiStepReportForm = ({ reportType, onCancel, editReportId = null 
             <div className="bg-blue-50/70 border border-blue-200 rounded-2xl p-5 flex gap-3 items-start">
               <input type="checkbox" checked={confirmed} onChange={e => setConfirmed(e.target.checked)} className="mt-1 h-5 w-5 text-blue-600 rounded cursor-pointer" id="submit-confirm-checkbox" />
               <label htmlFor="submit-confirm-checkbox" className="text-xs text-slate-800 leading-relaxed font-semibold cursor-pointer">
-                <strong>I verify and endorse that all records provided in Sections A through H represent accurate monthly departmental activity details.</strong>
+                <strong>I verify and endorse that all records provided in Sections A through H represent accurate {reportType === 'weekly' ? 'weekly' : 'monthly'} departmental activity details.</strong>
               </label>
             </div>
           </div>
@@ -1683,7 +1697,7 @@ export const MultiStepReportForm = ({ reportType, onCancel, editReportId = null 
           <CheckCircle className="h-10 w-10" />
         </div>
         <div>
-          <h2 className="text-2xl font-black text-slate-900">Department Monthly Report Submitted</h2>
+          <h2 className="text-2xl font-black text-slate-900">Department {reportType === 'weekly' ? 'Weekly' : 'Monthly'} Report Submitted</h2>
           <p className="text-slate-500 text-sm mt-1">Sent to {successReceipt.hodName} for review and approval.</p>
         </div>
         <button onClick={onCancel} className="bg-slate-900 hover:bg-slate-800 text-white font-bold text-xs py-3 px-6 rounded-xl">
@@ -1702,7 +1716,7 @@ export const MultiStepReportForm = ({ reportType, onCancel, editReportId = null 
             <ArrowLeft className="h-5 w-5" />
           </button>
           <div>
-            <h2 className="text-lg font-black text-slate-900 uppercase tracking-tight">Monthly Department Report Builder</h2>
+            <h2 className="text-lg font-black text-slate-900 uppercase tracking-tight">{reportType === 'weekly' ? 'WEEKLY' : 'MONTHLY'} DEPARTMENT REPORT BUILDER</h2>
             <p className="text-xs text-slate-500 font-bold">Academic Year 2026-27 (Odd Semester)</p>
           </div>
         </div>
