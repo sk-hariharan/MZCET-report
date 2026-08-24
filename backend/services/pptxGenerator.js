@@ -1,6 +1,7 @@
 import pptxgen from 'pptxgenjs';
 import fs from 'fs';
 import path from 'path';
+import { normalizeReportData } from './reportNormalizer.js';
 
 // Helper: Try to read header logo image as Base64 for PPTX embedding
 function getLogoBase64(filename = 'pdf word top logo.png') {
@@ -25,21 +26,6 @@ function getLogoBase64(filename = 'pdf word top logo.png') {
     }
   }
   return null;
-}
-
-// Deduplication helper to prevent repeated records in the same section
-function removeDuplicates(records, keyFields) {
-  if (!Array.isArray(records)) return [];
-  const seen = new Set();
-  return records.filter(record => {
-    const key = keyFields
-      .map(field => String(record[field] || '').trim().toLowerCase())
-      .join('|');
-    if (!key || key.replace(/\|/g, '') === '') return true;
-    if (seen.has(key)) return false;
-    seen.add(key);
-    return true;
-  });
 }
 
 // Master slide setup helper for 16:9 widescreen (10.0 x 5.625 inches)
@@ -71,10 +57,10 @@ function applySlideMaster(slide, title, departmentName = 'Information Technology
   });
 }
 
-// Create slide tables helper with exact 9.2 in total width
-function addSlideTable(slide, headers, rows, colWidths = null, yPos = 0.9) {
+// Create slide tables helper with exact 9.2 in total width and empty state handling
+function addSlideTable(slide, headers, rows, colWidths = null, emptyText = 'No records submitted for this section.', yPos = 0.9) {
   const finalRows = (!rows || rows.length === 0)
-    ? [[ { text: 'No records submitted for this section.', options: { colspan: headers.length, fill: 'FFFFFF', color: '64748B', italic: true, align: 'center', fontSize: 8.5 } } ]]
+    ? [[ { text: emptyText, options: { colspan: headers.length, fill: 'FFFFFF', color: '64748B', italic: true, align: 'center', fontSize: 8.5 } } ]]
     : rows.map(row => row.map(cell => ({
         text: String(cell !== undefined && cell !== null ? cell : '—'),
         options: { fill: 'FFFFFF', color: '1E293B', align: 'center', fontSize: 7.5 }
@@ -99,12 +85,13 @@ function addSlideTable(slide, headers, rows, colWidths = null, yPos = 0.9) {
   });
 }
 
-// Main PPTX Generator for Department Monthly Reports (Sections A - H)
-export async function generatePptx(summary, departmentName = 'Information Technology') {
+// Main PPTX Generator consuming single source of truth reportData
+export async function generatePptx(report, departmentName) {
+  const reportData = normalizeReportData(report);
   const pptx = new pptxgen();
   pptx.layout = 'LAYOUT_16x9'; // 10.0 in x 5.625 in
 
-  const deptToDisplay = summary?.department_name || departmentName;
+  const deptToDisplay = reportData.departmentName || departmentName || 'Information Technology';
 
   // ==========================================
   // SLIDE 1: Title Slide
@@ -144,7 +131,7 @@ export async function generatePptx(summary, departmentName = 'Information Techno
     color: 'FFFFFF', fontSize: 17, bold: true, align: 'center', wrap: true
   });
 
-  slide1.addText('ACADEMIC YEAR 2026 – 2027 (ODD SEMESTER)', {
+  slide1.addText(`ACADEMIC YEAR ${reportData.academicYear.replace('-', ' – ')} (${reportData.semester} SEMESTER)`, {
     x: 0.85, y: 2.1, w: 8.3, h: 0.35,
     color: '93C5FD', fontSize: 12, bold: true, align: 'center'
   });
@@ -164,7 +151,7 @@ export async function generatePptx(summary, departmentName = 'Information Techno
     { text: 'Name of the Department : ', options: { bold: true, color: '1E3A8A', fontSize: 11.5 } },
     { text: `${deptToDisplay}\n\n`, options: { bold: true, color: '0F172A', fontSize: 11.5 } },
     { text: 'Reporting Period Date   : ', options: { bold: true, color: '1E3A8A', fontSize: 11.5 } },
-    { text: `${summary?.start_date || '06.07.2026'} to ${summary?.end_date || '07.08.2026'}\n\n`, options: { color: '334155', fontSize: 11.5 } },
+    { text: `${reportData.reportingPeriod}\n\n`, options: { color: '334155', fontSize: 11.5 } },
     { text: 'Institution Status            : ', options: { bold: true, color: '1E3A8A', fontSize: 11.5 } },
     { text: 'Autonomous Institution (NAAC A+ Grade)', options: { color: '334155', fontSize: 11.5 } }
   ], {
@@ -183,190 +170,193 @@ export async function generatePptx(summary, departmentName = 'Information Techno
     fontSize: 8.5, color: '64748B', align: 'center'
   });
 
-  // Extract isolated section arrays with deduplication
-  const teachingList = removeDuplicates(summary?.teaching_activities || [], ['subject_name', 'class_assigned']);
-  const eventsList = removeDuplicates(summary?.events || [], ['event_date', 'event_name']);
-  const fdpList = removeDuplicates(summary?.fdp_training || [], ['start_date', 'program_title']);
-  
-  const achievements = summary?.achievements || [];
-  const facultyNptelList = removeDuplicates(achievements.filter(a => a.category === 'Faculty NPTEL' || a.achievement_type === 'NPTEL Course'), ['achievement_title', 'description']);
-  const studentPartList = removeDuplicates(achievements.filter(a => a.category === 'Student NPTEL' || a.category === 'Student Event' || a.achievement_type === 'Student NPTEL' || a.achievement_type === 'Student Event'), ['achievement_title', 'description']);
-  
-  const researchList = removeDuplicates(summary?.research_activities || [], ['journal_paper', 'conference_paper', 'research_proposal', 'work_done']);
-  const workPlanList = removeDuplicates(summary?.future_plans || [], ['particulars', 'sno']);
-
   // ==========================================
-  // SLIDE 2: Section A - Syllabus Completion
+  // SLIDE 2: Section A - Syllabus Completion (Theory)
   // ==========================================
   const slide2 = pptx.addSlide();
-  applySlideMaster(slide2, 'A. Syllabus Completion (Theory & Laboratory)', deptToDisplay);
-
-  const syllabusRows = teachingList.map((t, idx) => [
-    String(idx + 1),
-    `${t.subject_name || 'Subject'}${t.instructor_name ? ' / ' + t.instructor_name : ''}`,
-    t.class_assigned || '—',
-    t.teaching_hours ? `${t.teaching_hours} Hours` : `${t.classes_taken || 0} Hours`,
-    t.current_unit || `${t.syllabus_pct || 0}% Completed`
-  ]);
-
-  addSlideTable(slide2, ['S.No', 'Course Name & Instructor', 'Class Assigned', 'Hours Handled', 'Completion Status'], syllabusRows, [0.6, 3.6, 1.8, 1.4, 1.8]);
+  applySlideMaster(slide2, `${reportData.sectionTitleA} — Theory`, deptToDisplay);
+  addSlideTable(
+    slide2,
+    reportData.syllabusTheoryHeaders,
+    reportData.syllabusTheoryRows,
+    [2.8, 1.8, 4.6],
+    reportData.emptySectionText
+  );
 
   // ==========================================
-  // SLIDE 3: Section B - Events Organised
+  // SLIDE 3: Section A - Syllabus Completion (Laboratory)
   // ==========================================
   const slide3 = pptx.addSlide();
-  applySlideMaster(slide3, 'B. Details of Events Organised', deptToDisplay);
-
-  const eventRows = eventsList.map((e, idx) => [
-    String(idx + 1),
-    e.event_date || '—',
-    e.event_name || '—',
-    e.students_participated || '—',
-    e.role || summary?.staff_name || '—',
-    e.description || '—'
-  ]);
-
-  addSlideTable(slide3, ['S.No', 'Date', 'Event Name', 'Attendance', 'Coordinator', 'Resource Person Details'], eventRows, [0.5, 1.1, 2.6, 1.2, 1.8, 2.0]);
+  applySlideMaster(slide3, `${reportData.sectionTitleA} — Lab`, deptToDisplay);
+  addSlideTable(
+    slide3,
+    reportData.syllabusLabHeaders,
+    reportData.syllabusLabRows,
+    [2.8, 1.8, 2.3, 2.3],
+    reportData.emptySectionText
+  );
 
   // ==========================================
-  // SLIDE 4: Section C - Faculty Participation
+  // SLIDE 4: Section B - Events Organised
   // ==========================================
   const slide4 = pptx.addSlide();
-  applySlideMaster(slide4, 'C. Details of Faculty Participation (FDP & Workshops)', deptToDisplay);
-
-  const fdpRows = fdpList.map((f, idx) => [
-    String(idx + 1),
-    f.role || summary?.staff_name || 'Faculty Member',
-    f.start_date || '—',
-    f.program_title || '—',
-    `${f.organizing_institution || ''} (${f.mode || 'Offline'})`
-  ]);
-
-  addSlideTable(slide4, ['S.No', 'Faculty Name', 'Date', 'Event Name', 'Venue / Organizer'], fdpRows, [0.5, 2.2, 1.4, 2.6, 2.5]);
+  applySlideMaster(slide4, reportData.sectionTitleB, deptToDisplay);
+  addSlideTable(
+    slide4,
+    reportData.eventsHeaders,
+    reportData.eventsRows,
+    [0.6, 1.2, 2.6, 1.3, 1.7, 1.8],
+    reportData.emptySectionText
+  );
 
   // ==========================================
-  // SLIDE 5: Section C - Faculty NPTEL Courses
+  // SLIDE 5: Section C - Faculty Participation (FDP & Workshops)
   // ==========================================
   const slide5 = pptx.addSlide();
-  applySlideMaster(slide5, 'C. Faculty NPTEL Courses', deptToDisplay);
-
-  const fnptelRows = facultyNptelList.map((fn, idx) => [
-    String(idx + 1),
-    fn.recognition || summary?.staff_name || 'Faculty Member',
-    fn.description || '—',
-    fn.achievement_title || '—',
-    fn.level || 'Registered'
-  ]);
-
-  addSlideTable(slide5, ['S.No', 'Faculty Name', 'Date (From – To)', 'Course Name', 'Status / Result'], fnptelRows, [0.5, 2.2, 1.8, 3.0, 1.7]);
+  applySlideMaster(slide5, reportData.sectionTitleC1, deptToDisplay);
+  addSlideTable(
+    slide5,
+    reportData.facultyFdpHeaders,
+    reportData.facultyFdpRows,
+    [0.6, 2.2, 1.4, 2.5, 2.5],
+    reportData.emptySectionText
+  );
 
   // ==========================================
-  // SLIDE 6: Section D - Student Participation & NPTEL
+  // SLIDE 6: Section C - Faculty NPTEL Courses
   // ==========================================
   const slide6 = pptx.addSlide();
-  applySlideMaster(slide6, 'D. Details of Student Participation & NPTEL', deptToDisplay);
-
-  const spartRows = studentPartList.map((sp, idx) => [
-    String(idx + 1),
-    sp.recognition || summary?.staff_name || 'Mentor',
-    sp.description || 'Student',
-    sp.achievement_type === 'Student Event' ? 'Event' : 'NPTEL',
-    sp.achievement_title || '—',
-    sp.level || 'Registered'
-  ]);
-
-  addSlideTable(slide6, ['S.No', 'Mentor Name', 'Student Name', 'Category', 'Course / Event Name', 'Status / Prize'], spartRows, [0.5, 1.8, 1.8, 0.8, 2.6, 1.7]);
+  applySlideMaster(slide6, reportData.sectionTitleC2, deptToDisplay);
+  addSlideTable(
+    slide6,
+    reportData.facultyNptelHeaders,
+    reportData.facultyNptelRows,
+    [0.6, 2.2, 1.8, 2.8, 1.8],
+    reportData.emptySectionText
+  );
 
   // ==========================================
-  // SLIDE 7: Section G - Research Activities
+  // SLIDE 7: Section D - Student Participation & NPTEL
   // ==========================================
   const slide7 = pptx.addSlide();
-  applySlideMaster(slide7, 'G. Details of Research Activity', deptToDisplay);
-
-  const researchRows = researchList.map(r => [
-    r.work_done || 'Research',
-    r.progress_remarks || summary?.staff_name || 'IT Faculty Team',
-    r.journal_paper || r.conference_paper || r.research_proposal || r.work_done || 'Details',
-    r.publication_status || 'In Progress'
-  ]);
-
-  addSlideTable(slide7, ['Category', 'Faculty Name', 'Title & Venue Details', 'Status'], researchRows, [1.5, 2.0, 4.0, 1.7]);
+  applySlideMaster(slide7, reportData.sectionTitleD, deptToDisplay);
+  addSlideTable(
+    slide7,
+    reportData.studentPartHeaders,
+    reportData.studentPartRows,
+    [0.6, 1.8, 1.8, 0.9, 2.4, 1.7],
+    reportData.emptySectionText
+  );
 
   // ==========================================
-  // SLIDE 8: Section H - Work Plan (Next Month)
+  // SLIDE 8: Section G - Research Activities
   // ==========================================
   const slide8 = pptx.addSlide();
-  applySlideMaster(slide8, 'H. Work Plan Targets (Next Month Department Targets)', deptToDisplay);
-
-  const workPlanRows = workPlanList.map((wp, idx) => [
-    String(wp.sno || (idx + 1)),
-    wp.particulars || wp.target_to_achieve || '—',
-    wp.requirement || '—',
-    wp.conducted || '0',
-    wp.to_be_conducted || 'Planned'
-  ]);
-
-  addSlideTable(slide8, ['S.No', 'Particulars', 'Requirement Target', 'Conducted', 'To be Conducted'], workPlanRows, [0.5, 3.2, 2.5, 1.3, 1.7]);
+  applySlideMaster(slide8, reportData.sectionTitleG, deptToDisplay);
+  addSlideTable(
+    slide8,
+    reportData.researchHeaders,
+    reportData.researchRows,
+    [1.6, 2.0, 3.8, 1.8],
+    reportData.emptySectionText
+  );
 
   // ==========================================
-  // SLIDE 9: Thank You Slide (Closing Slide)
+  // SLIDE 9: Section H - Work Plan (Next Month)
   // ==========================================
   const slide9 = pptx.addSlide();
-  slide9.background = { fill: 'F8FAFC' };
+  applySlideMaster(slide9, reportData.sectionTitleH, deptToDisplay);
+  addSlideTable(
+    slide9,
+    reportData.workPlanHeaders,
+    reportData.workPlanRows,
+    [0.6, 3.1, 2.4, 1.4, 1.7],
+    reportData.emptySectionText
+  );
+
+  // ==========================================
+  // SLIDE: Students Attendance Summary (PPT Only)
+  // ==========================================
+  if (reportData.attendanceSummary && reportData.attendanceSummary.rows && reportData.attendanceSummary.rows.length > 0) {
+    const slideAtt = pptx.addSlide();
+    applySlideMaster(slideAtt, 'Students Attendance Summary', deptToDisplay);
+
+    const weekLabels = reportData.attendanceSummary.weeks.map(w => w.label);
+    const attHeaders = ['Year', ...weekLabels];
+    const attRows = reportData.attendanceSummary.rows.map(r => [
+      r.year,
+      ...r.attendance.map(val => (val !== null && val !== undefined && val !== '—') ? `${val}%` : '—')
+    ]);
+
+    addSlideTable(
+      slideAtt,
+      attHeaders,
+      attRows,
+      null, // Auto column width
+      reportData.emptySectionText,
+      1.1 // yPos
+    );
+  }
+
+  // ==========================================
+  // SLIDE 10: Thank You Slide (Closing Slide)
+  // ==========================================
+  const slide10 = pptx.addSlide();
+  slide10.background = { fill: 'F8FAFC' };
 
   // Top Accent Bar
-  slide9.addShape('rect', {
+  slide10.addShape('rect', {
     x: 0, y: 0, w: 10.0, h: 0.12,
     fill: '1E3A8A'
   });
 
   // Central Hero Card Container
-  slide9.addShape('rect', {
+  slide10.addShape('rect', {
     x: 1.0, y: 0.6, w: 8.0, h: 4.2,
     fill: '1E3A8A', line: { color: '1D4ED8', width: 1.5 }
   });
 
   // Inner Accent Border Box
-  slide9.addShape('rect', {
+  slide10.addShape('rect', {
     x: 1.2, y: 0.8, w: 7.6, h: 3.8,
     fill: '1E3A8A', line: { color: '93C5FD', width: 1 }
   });
 
   // Large THANK YOU Heading
-  slide9.addText('THANK YOU!', {
+  slide10.addText('THANK YOU!', {
     x: 1.5, y: 1.35, w: 7.0, h: 0.9,
     color: 'FFFFFF', fontSize: 36, bold: true, align: 'center', tracking: 2
   });
 
   // Decorative Accent Separator
-  slide9.addShape('rect', {
+  slide10.addShape('rect', {
     x: 3.5, y: 2.35, w: 3.0, h: 0.03,
     fill: '93C5FD'
   });
 
   // Sub-text: Department Name & Institutional Endorsement
-  slide9.addText(`DEPARTMENT OF ${deptToDisplay.toUpperCase()}`, {
+  slide10.addText(`DEPARTMENT OF ${deptToDisplay.toUpperCase()}`, {
     x: 1.5, y: 2.55, w: 7.0, h: 0.45,
     color: '93C5FD', fontSize: 15, bold: true, align: 'center'
   });
 
-  slide9.addText('Mount Zion College of Engineering and Technology', {
+  slide10.addText('Mount Zion College of Engineering and Technology', {
     x: 1.5, y: 3.1, w: 7.0, h: 0.4,
     color: 'FFFFFF', fontSize: 13, bold: true, align: 'center'
   });
 
-  slide9.addText('An Autonomous Institution | Accredited by NAAC with A+ Grade', {
+  slide10.addText('An Autonomous Institution | Accredited by NAAC with A+ Grade', {
     x: 1.5, y: 3.55, w: 7.0, h: 0.35,
     color: 'CBD5E1', fontSize: 10.5, italic: true, align: 'center'
   });
 
   // Bottom Footer
-  slide9.addShape('line', {
+  slide10.addShape('line', {
     x: 0.5, y: 5.15, w: 9.0, h: 0,
     line: { color: 'CBD5E1', width: 1 }
   });
 
-  slide9.addText('Mount Zion College of Engineering and Technology — To Make Man Whole!!', {
+  slide10.addText('Mount Zion College of Engineering and Technology — To Make Man Whole!!', {
     x: 0.5, y: 5.25, w: 9.0, h: 0.3,
     fontSize: 8.5, color: '64748B', align: 'center'
   });

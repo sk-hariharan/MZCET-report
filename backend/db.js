@@ -361,6 +361,16 @@ const CREATE_TABLES = [
     support_required TEXT,
     additional_info TEXT
   )`,
+  `CREATE TABLE IF NOT EXISTS weekly_attendance_summary (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    report_id INTEGER NOT NULL,
+    year TEXT NOT NULL,
+    week_index INTEGER DEFAULT 1,
+    week_label TEXT,
+    week_start TEXT,
+    week_end TEXT,
+    attendance_pct REAL DEFAULT 0.0
+  )`,
   `CREATE TABLE IF NOT EXISTS documents (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     report_id INTEGER NOT NULL,
@@ -841,7 +851,7 @@ export const db = {
         'mentoring', 'project_guidance', 'department_activities', 'events', 'fdp_training',
         'research_activities', 'professional_development', 'achievements',
         'administrative_activities', 'lab_activities', 'meetings', 'issues', 'future_plans',
-        'additional_remarks', 'documents', 'audit_logs'
+        'additional_remarks', 'weekly_attendance_summary', 'documents', 'audit_logs'
       ];
       for (const table of subTables) {
         const { data, error: subErr } = await supabase.from(table).select('*').eq('report_id', id);
@@ -867,7 +877,7 @@ export const db = {
         'mentoring', 'project_guidance', 'department_activities', 'events', 'fdp_training',
         'research_activities', 'professional_development', 'achievements',
         'administrative_activities', 'lab_activities', 'meetings', 'issues', 'future_plans',
-        'additional_remarks', 'documents', 'audit_logs'
+        'additional_remarks', 'weekly_attendance_summary', 'documents', 'audit_logs'
       ];
       for (const table of subTables) {
         report[table] = await all(`SELECT * FROM ${table} WHERE report_id = ?`, [id]);

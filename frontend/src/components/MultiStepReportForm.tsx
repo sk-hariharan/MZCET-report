@@ -93,6 +93,35 @@ const isCourseTypeMatching = (courseType: string = '', entryType: string = '') =
   }
 };
 
+const YEAR_ORDER = ["I", "II", "III", "IV"];
+
+const sortYears = (yearsList: string[]) => {
+  return [...yearsList].sort((a, b) => {
+    const idxA = YEAR_ORDER.indexOf(a);
+    const idxB = YEAR_ORDER.indexOf(b);
+    if (idxA !== -1 && idxB !== -1) return idxA - idxB;
+    if (idxA !== -1) return -1;
+    if (idxB !== -1) return 1;
+    return a.localeCompare(b);
+  });
+};
+
+const formatDateLabel = (startDateStr: string, endDateStr: string) => {
+  if (!startDateStr || !endDateStr) return '';
+  const start = new Date(startDateStr);
+  const end = new Date(endDateStr);
+  if (isNaN(start.getTime()) || isNaN(end.getTime())) return '';
+
+  const formatShort = (d: Date) => {
+    const day = String(d.getDate()).padStart(2, '0');
+    const month = String(d.getMonth() + 1).padStart(2, '0');
+    const year = String(d.getFullYear()).slice(-2);
+    return `${day}.${month}.${year}`;
+  };
+
+  return `${formatShort(start)} - ${formatShort(end)}`;
+};
+
 export const MultiStepReportForm = ({ reportType, onCancel, editReportId = null }) => {
   const { token, user, apiBaseUrl } = useAuth();
   const [currentStep, setCurrentStep] = useState(1);
@@ -150,6 +179,39 @@ export const MultiStepReportForm = ({ reportType, onCancel, editReportId = null 
   // Section H: Work Plan (Next Month Department Targets)
   const [workPlan, setWorkPlan] = useState(WORK_PLAN_DEFAULT_ITEMS);
 
+  // Students Attendance Summary state (User Selectable Date Ranges - PPT Only)
+  const [attendanceYears, setAttendanceYears] = useState<string[]>(['I', 'II', 'III', 'IV']);
+  const [weeks, setWeeks] = useState<{ id: string; startDate: string; endDate: string }[]>([
+    { id: 'week-1', startDate: '2026-07-06', endDate: '2026-07-10' },
+    { id: 'week-2', startDate: '2026-07-13', endDate: '2026-07-17' },
+    { id: 'week-3', startDate: '2026-07-20', endDate: '2026-07-24' }
+  ]);
+  const [attendanceData, setAttendanceData] = useState<{ [year: string]: { [weekId: string]: string } }>({
+    'II': {},
+    'III': {},
+    'IV': {}
+  });
+
+  const addWeek = () => {
+    const newId = `week-${Date.now()}`;
+    setWeeks(prev => [...prev, { id: newId, startDate: '', endDate: '' }]);
+  };
+
+  const removeWeek = (weekId: string) => {
+    setWeeks(prev => prev.filter(w => w.id !== weekId));
+    setAttendanceData(prev => {
+      const updated = { ...prev };
+      Object.keys(updated).forEach(yr => {
+        if (updated[yr]) {
+          const copyYr = { ...updated[yr] };
+          delete copyYr[weekId];
+          updated[yr] = copyYr;
+        }
+      });
+      return updated;
+    });
+  };
+
   // Agreement checkbox
   const [confirmed, setConfirmed] = useState(false);
 
@@ -162,6 +224,7 @@ export const MultiStepReportForm = ({ reportType, onCancel, editReportId = null 
     'E & F. Feedback & CCM',
     'G. Research Activity',
     'H. Work Plan Targets',
+    'Students Attendance Summary',
     'Upload & Submit'
   ];
 
@@ -222,6 +285,39 @@ export const MultiStepReportForm = ({ reportType, onCancel, editReportId = null 
             if (r.future_plans?.length > 0) {
               setWorkPlan(r.future_plans);
             }
+            if (r.weekly_attendance_summary?.length > 0) {
+              const weekMap = new Map();
+              r.weekly_attendance_summary.forEach((item: any) => {
+                const key = item.week_start && item.week_end ? `${item.week_start}_${item.week_end}` : `w_${item.week_index || 1}`;
+                if (!weekMap.has(key)) {
+                  weekMap.set(key, {
+                    id: `week-${weekMap.size + 1}`,
+                    startDate: item.week_start || '',
+                    endDate: item.week_end || '',
+                    week_index: item.week_index || 1
+                  });
+                }
+              });
+
+              const loadedWeeks = Array.from(weekMap.values()).sort((a, b) => a.week_index - b.week_index);
+              const yearsSet = new Set<string>();
+              const attObj: { [year: string]: { [weekId: string]: string } } = {};
+
+              r.weekly_attendance_summary.forEach((item: any) => {
+                const yr = item.year || 'II';
+                yearsSet.add(yr);
+                if (!attObj[yr]) attObj[yr] = {};
+                const matchedWeek = loadedWeeks.find(w => w.startDate === item.week_start && w.endDate === item.week_end)
+                                 || loadedWeeks[(item.week_index || 1) - 1];
+                if (matchedWeek) {
+                  attObj[yr][matchedWeek.id] = item.attendance_pct !== undefined && item.attendance_pct !== null ? String(item.attendance_pct) : '';
+                }
+              });
+
+              if (loadedWeeks.length > 0) setWeeks(loadedWeeks);
+              if (yearsSet.size > 0) setAttendanceYears(sortYears(Array.from(yearsSet)));
+              setAttendanceData(attObj);
+            }
             setUploadedFiles(r.documents || []);
           }
         } catch (error) {
@@ -246,12 +342,20 @@ export const MultiStepReportForm = ({ reportType, onCancel, editReportId = null 
         return false;
       }
     }
+    if (step === 9) {
+      for (const w of weeks) {
+        if (w.startDate && w.endDate && new Date(w.endDate) < new Date(w.startDate)) {
+          setErrorMsg('End date must be after or equal to start date for all weeks.');
+          return false;
+        }
+      }
+    }
     return true;
   };
 
   const handleNext = () => {
     if (validateStep(currentStep)) {
-      setCurrentStep(prev => Math.min(prev + 1, 9));
+      setCurrentStep(prev => Math.min(prev + 1, 10));
     }
   };
 
@@ -279,6 +383,27 @@ export const MultiStepReportForm = ({ reportType, onCancel, editReportId = null 
       ...ccm.map(cc => ({ type: 'CCM', overall_summary: `Class: ${cc.year} | Discussion: ${cc.discussion}`, major_contributions: cc.action_taken }))
     ];
 
+    const attendanceList: any[] = [];
+    weeks.forEach((w, wIdx) => {
+      const label = formatDateLabel(w.startDate, w.endDate) || `Week ${wIdx + 1}`;
+      sortYears(attendanceYears).forEach(year => {
+        const valStr = attendanceData[year]?.[w.id] || '';
+        if (valStr.trim() !== '') {
+          const numVal = parseFloat(valStr.replace('%', ''));
+          if (!isNaN(numVal)) {
+            attendanceList.push({
+              year,
+              week_index: wIdx + 1,
+              week_label: label,
+              week_start: w.startDate,
+              week_end: w.endDate,
+              attendance_pct: numVal
+            });
+          }
+        }
+      });
+    });
+
     return {
       report_type: reportType,
       academic_year: meta.academic_year,
@@ -298,7 +423,8 @@ export const MultiStepReportForm = ({ reportType, onCancel, editReportId = null 
         achievements: achievementsList,
         research_activities: researchList,
         additional_remarks: remarksList,
-        future_plans: workPlan
+        future_plans: workPlan,
+        weekly_attendance_summary: attendanceList
       }
     };
   };
@@ -1321,10 +1447,192 @@ export const MultiStepReportForm = ({ reportType, onCancel, editReportId = null 
           </div>
         );
 
-      case 9: // Document Upload & Submission
+      case 9: // Students Attendance Summary (PPT Only - User Selectable Date Ranges)
         return (
           <div className="space-y-6">
-            <h3 className="text-lg font-extrabold text-slate-900 border-b pb-2">Step 9: Supporting Documents Upload & Final Verification Submit</h3>
+            <div className="border-b pb-3 flex flex-wrap items-center justify-between gap-3">
+              <div>
+                <h3 className="text-lg font-extrabold text-slate-900 flex items-center gap-2">
+                  <Users className="h-5 w-5 text-purple-600" /> Students Attendance Summary
+                </h3>
+                <p className="text-xs text-slate-500 font-medium mt-0.5">
+                  Select start and end dates manually for each weekly attendance column. Click "+ Add Week" to create additional date columns.
+                </p>
+              </div>
+              <div className="flex gap-2">
+                <button
+                  type="button"
+                  onClick={addWeek}
+                  className="flex items-center gap-1.5 bg-purple-700 hover:bg-purple-800 text-white font-bold text-xs py-2 px-3.5 rounded-xl shadow transition-all"
+                >
+                  <Plus className="h-4 w-4" /> Add Week
+                </button>
+              </div>
+            </div>
+
+            <div className="bg-white border rounded-2xl p-5 shadow-sm space-y-4">
+              <div className="overflow-x-auto">
+                <table className="w-full text-left border-collapse">
+                  <thead>
+                    <tr className="bg-purple-900 text-white text-xs font-bold">
+                      <th className="p-3 border border-purple-800 text-center w-24">Year</th>
+                      {weeks.map((w, wIdx) => {
+                        const fmtLabel = formatDateLabel(w.startDate, w.endDate);
+                        const isInvalidRange = Boolean(w.startDate && w.endDate && new Date(w.endDate) < new Date(w.startDate));
+                        return (
+                          <th key={w.id} className="p-3 border border-purple-800 min-w-[220px] bg-purple-900/95">
+                            <div className="flex flex-col gap-2">
+                              <div className="flex items-center justify-between border-b border-purple-700/80 pb-1.5">
+                                <span className="font-extrabold text-xs tracking-wider text-purple-200">Week {wIdx + 1}</span>
+                                {weeks.length > 1 && (
+                                  <button
+                                    type="button"
+                                    onClick={() => removeWeek(w.id)}
+                                    className="text-purple-300 hover:text-red-300 transition-colors p-0.5"
+                                    title="Delete week column"
+                                  >
+                                    <Trash2 className="h-3.5 w-3.5" />
+                                  </button>
+                                )}
+                              </div>
+
+                              <div className="grid grid-cols-2 gap-2 text-[10px] font-normal text-slate-800">
+                                <div>
+                                  <label className="block text-[9px] uppercase tracking-wider font-semibold text-purple-200 mb-0.5">Start Date</label>
+                                  <input
+                                    type="date"
+                                    className="w-full bg-white border border-purple-300 rounded-lg p-1 text-[11px] font-bold text-slate-800 outline-none focus:ring-2 focus:ring-purple-400"
+                                    value={w.startDate}
+                                    onChange={e => {
+                                      const val = e.target.value;
+                                      setWeeks(prev => prev.map(item => item.id === w.id ? { ...item, startDate: val } : item));
+                                    }}
+                                  />
+                                </div>
+                                <div>
+                                  <label className="block text-[9px] uppercase tracking-wider font-semibold text-purple-200 mb-0.5">End Date</label>
+                                  <input
+                                    type="date"
+                                    className="w-full bg-white border border-purple-300 rounded-lg p-1 text-[11px] font-bold text-slate-800 outline-none focus:ring-2 focus:ring-purple-400"
+                                    value={w.endDate}
+                                    onChange={e => {
+                                      const val = e.target.value;
+                                      setWeeks(prev => prev.map(item => item.id === w.id ? { ...item, endDate: val } : item));
+                                    }}
+                                  />
+                                </div>
+                              </div>
+
+                              {fmtLabel && !isInvalidRange && (
+                                <div className="text-center font-extrabold text-[11px] text-amber-300 bg-purple-950/60 py-1 px-2 rounded-md border border-purple-700/50 mt-0.5">
+                                  {fmtLabel}
+                                </div>
+                              )}
+
+                              {isInvalidRange && (
+                                <div className="text-center text-[10px] font-bold text-red-300 bg-red-950/80 p-1 rounded border border-red-500/50 leading-tight">
+                                  ⚠️ End date must be after or equal to start date
+                                </div>
+                              )}
+                            </div>
+                          </th>
+                        );
+                      })}
+                      <th className="p-3 border border-purple-800 text-center w-12"></th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {sortYears(attendanceYears).map((yr, yIdx) => (
+                      <tr key={yr} className={yIdx % 2 === 0 ? 'bg-white' : 'bg-purple-50/30'}>
+                        <td className="p-3 border font-bold text-center text-slate-800 text-sm bg-slate-50">
+                          {yr}
+                        </td>
+                        {weeks.map(w => {
+                          const val = attendanceData[yr]?.[w.id] || '';
+                          return (
+                            <td key={w.id} className="p-2 border text-center">
+                              <input
+                                type="text"
+                                placeholder="e.g. 90"
+                                className="w-full text-center border border-slate-300 rounded-lg p-2.5 text-sm font-semibold text-slate-800 focus:ring-2 focus:ring-purple-500 outline-none"
+                                value={val}
+                                onChange={e => {
+                                  const inputVal = e.target.value;
+                                  setAttendanceData(prev => ({
+                                    ...prev,
+                                    [yr]: {
+                                      ...(prev[yr] || {}),
+                                      [w.id]: inputVal
+                                    }
+                                  }));
+                                }}
+                              />
+                            </td>
+                          );
+                        })}
+                        <td className="p-2 border text-center bg-slate-50">
+                          {attendanceYears.length > 1 && (
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setAttendanceYears(prev => prev.filter(y => y !== yr));
+                                setAttendanceData(prev => {
+                                  const copy = { ...prev };
+                                  delete copy[yr];
+                                  return copy;
+                                });
+                              }}
+                              className="text-red-500 hover:text-red-700 p-1"
+                              title="Delete year row"
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </button>
+                          )}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+
+              <div className="flex items-center justify-between pt-3 border-t">
+                <div className="flex gap-2">
+                  <button
+                    type="button"
+                    onClick={addWeek}
+                    className="flex items-center gap-1.5 bg-purple-700 hover:bg-purple-800 text-white font-bold text-xs py-2 px-3.5 rounded-xl shadow transition-all"
+                  >
+                    <Plus className="h-4 w-4" /> Add Week Column
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const newYrPrompt = prompt('Enter Academic Year label (e.g. I, II, III, IV):');
+                      if (newYrPrompt && newYrPrompt.trim()) {
+                        const trimmed = newYrPrompt.trim().toUpperCase();
+                        if (!attendanceYears.includes(trimmed)) {
+                          setAttendanceYears(prev => sortYears([...prev, trimmed]));
+                          setAttendanceData(prev => ({ ...prev, [trimmed]: {} }));
+                        }
+                      }
+                    }}
+                    className="flex items-center gap-1.5 bg-slate-800 hover:bg-slate-900 text-white font-bold text-xs py-2 px-3.5 rounded-xl shadow transition-all"
+                  >
+                    <Plus className="h-4 w-4" /> Add Year Row
+                  </button>
+                </div>
+                <span className="text-[11px] text-slate-400 font-medium italic">
+                  Note: Attendance Summary data will be included in the generated PowerPoint (.pptx) presentation.
+                </span>
+              </div>
+            </div>
+          </div>
+        );
+
+      case 10: // Document Upload & Submission
+        return (
+          <div className="space-y-6">
+            <h3 className="text-lg font-extrabold text-slate-900 border-b pb-2">Step 10: Supporting Documents Upload & Final Verification Submit</h3>
 
             {/* File Upload Box */}
             <div className="bg-slate-50 border-2 border-dashed border-slate-300 rounded-2xl p-6 text-center space-y-4">
@@ -1463,7 +1771,7 @@ export const MultiStepReportForm = ({ reportType, onCancel, editReportId = null 
               <ArrowLeft className="h-4 w-4" /> Back
             </button>
 
-            {currentStep < 9 ? (
+            {currentStep < 10 ? (
               <button type="button" onClick={handleNext} className="flex items-center gap-1 bg-blue-600 hover:bg-blue-700 text-white font-bold text-sm px-6 py-2.5 rounded-xl shadow transition-all">
                 Next Step <ArrowRight className="h-4 w-4" />
               </button>

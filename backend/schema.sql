@@ -372,6 +372,18 @@ CREATE TABLE IF NOT EXISTS additional_remarks (
     additional_info TEXT
 );
 
+-- 22b. Weekly Attendance Summary Table (PPT Only Slide)
+CREATE TABLE IF NOT EXISTS weekly_attendance_summary (
+    id SERIAL PRIMARY KEY,
+    report_id INTEGER NOT NULL REFERENCES reports(id) ON DELETE CASCADE,
+    year VARCHAR(50) NOT NULL,
+    week_index INTEGER DEFAULT 1,
+    week_label VARCHAR(100),
+    week_start VARCHAR(50),
+    week_end VARCHAR(50),
+    attendance_pct REAL DEFAULT 0.0
+);
+
 -- 23. Documents Table (Supporting documents uploads)
 CREATE TABLE IF NOT EXISTS documents (
     id SERIAL PRIMARY KEY,
