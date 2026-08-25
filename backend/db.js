@@ -442,92 +442,91 @@ export async function initializeDatabase() {
     for (const tableSql of CREATE_TABLES) {
       await run(tableSql);
     }
-  } catch (err) {
-    console.log('SQLite fallback unavailable:', err.message);
-  }
-}
 
-  // Auto-migrate schema columns for existing SQLite databases
-  const alterMigrations = [
-    "ALTER TABLE teaching_activities ADD COLUMN course_type TEXT DEFAULT 'Theory'",
-    "ALTER TABLE teaching_activities ADD COLUMN instructor_name TEXT",
-    "ALTER TABLE teaching_activities ADD COLUMN classes_taken INTEGER DEFAULT 0",
-    "ALTER TABLE teaching_activities ADD COLUMN classes_cancelled INTEGER DEFAULT 0",
-    "ALTER TABLE teaching_activities ADD COLUMN classes_rescheduled INTEGER DEFAULT 0",
-    "ALTER TABLE teaching_activities ADD COLUMN teaching_hours TEXT",
-    "ALTER TABLE teaching_activities ADD COLUMN syllabus_planned TEXT",
-    "ALTER TABLE teaching_activities ADD COLUMN syllabus_completed TEXT",
-    "ALTER TABLE teaching_activities ADD COLUMN syllabus_pct REAL DEFAULT 0.0",
-    "ALTER TABLE teaching_activities ADD COLUMN current_unit TEXT",
-    "ALTER TABLE teaching_activities ADD COLUMN pending_units TEXT",
-    "ALTER TABLE teaching_activities ADD COLUMN pending_reason TEXT",
-    "ALTER TABLE teaching_activities ADD COLUMN lesson_plan_status TEXT",
-    "ALTER TABLE teaching_activities ADD COLUMN teaching_methods TEXT",
-    "ALTER TABLE teaching_activities ADD COLUMN ict_tools TEXT",
-    "ALTER TABLE teaching_activities ADD COLUMN additional_classes INTEGER DEFAULT 0",
-    "ALTER TABLE teaching_activities ADD COLUMN extra_hours INTEGER DEFAULT 0",
-    "ALTER TABLE teaching_activities ADD COLUMN exp_completed TEXT",
-    "ALTER TABLE teaching_activities ADD COLUMN exp_remaining TEXT"
-  ];
-  for (const sql of alterMigrations) {
-    try { await run(sql); } catch (e) {}
-  }
-
-  // Seed demo data if users table is empty
-  const userCount = await get('SELECT count(*) as count FROM users');
-  if (userCount.count === 0) {
-    console.log('Seeding initial departments, semesters and demo accounts...');
-
-    // Seed departments
-    const departments = [
-      'Information Technology',
-      'Computer Science & Engineering',
-      'Electronics & Communication Engineering',
-      'Electrical & Electronics Engineering',
-      'Mechanical Engineering',
-      'Civil Engineering'
+    // Auto-migrate schema columns for existing SQLite databases
+    const alterMigrations = [
+      "ALTER TABLE teaching_activities ADD COLUMN course_type TEXT DEFAULT 'Theory'",
+      "ALTER TABLE teaching_activities ADD COLUMN instructor_name TEXT",
+      "ALTER TABLE teaching_activities ADD COLUMN classes_taken INTEGER DEFAULT 0",
+      "ALTER TABLE teaching_activities ADD COLUMN classes_cancelled INTEGER DEFAULT 0",
+      "ALTER TABLE teaching_activities ADD COLUMN classes_rescheduled INTEGER DEFAULT 0",
+      "ALTER TABLE teaching_activities ADD COLUMN teaching_hours TEXT",
+      "ALTER TABLE teaching_activities ADD COLUMN syllabus_planned TEXT",
+      "ALTER TABLE teaching_activities ADD COLUMN syllabus_completed TEXT",
+      "ALTER TABLE teaching_activities ADD COLUMN syllabus_pct REAL DEFAULT 0.0",
+      "ALTER TABLE teaching_activities ADD COLUMN current_unit TEXT",
+      "ALTER TABLE teaching_activities ADD COLUMN pending_units TEXT",
+      "ALTER TABLE teaching_activities ADD COLUMN pending_reason TEXT",
+      "ALTER TABLE teaching_activities ADD COLUMN lesson_plan_status TEXT",
+      "ALTER TABLE teaching_activities ADD COLUMN teaching_methods TEXT",
+      "ALTER TABLE teaching_activities ADD COLUMN ict_tools TEXT",
+      "ALTER TABLE teaching_activities ADD COLUMN additional_classes INTEGER DEFAULT 0",
+      "ALTER TABLE teaching_activities ADD COLUMN extra_hours INTEGER DEFAULT 0",
+      "ALTER TABLE teaching_activities ADD COLUMN exp_completed TEXT",
+      "ALTER TABLE teaching_activities ADD COLUMN exp_remaining TEXT"
     ];
-    for (const name of departments) {
-      await run('INSERT INTO departments (department_name) VALUES (?)', [name]);
+    for (const sql of alterMigrations) {
+      try { await run(sql); } catch (e) {}
     }
 
-    // Seed academic years
-    await run("INSERT INTO academic_years (year_name, active) VALUES (?, ?)", ['2025-2026', 1]);
+    // Seed demo data if users table is empty
+    const userCount = await get('SELECT count(*) as count FROM users');
+    if (userCount.count === 0) {
+      console.log('Seeding initial departments, semesters and demo accounts...');
 
-    // Seed demo accounts with password mzcet@1234
-    const passwordHash = await bcrypt.hash('mzcet@1234', 10);
-    
-    // Staff: id=1
-    await run(
-      `INSERT INTO users (email, password_hash, name, staff_id, role, department_id, designation, phone, qualification, specialization, date_of_joining, academic_year, semester) 
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-      ['staff@mzcet.edu.in', passwordHash, 'Mrs. V Brindha Devi', 'mzcet@it_coordinator', 'staff', 1, 'Assistant Professor', '9876543210', 'M.E., Ph.D.', 'Cloud Computing', '2018-06-15', '2025-2026', 'ODD']
-    );
+      // Seed departments
+      const departments = [
+        'Information Technology',
+        'Computer Science & Engineering',
+        'Electronics & Communication Engineering',
+        'Electrical & Electronics Engineering',
+        'Mechanical Engineering',
+        'Civil Engineering'
+      ];
+      for (const name of departments) {
+        await run('INSERT INTO departments (department_name) VALUES (?)', [name]);
+      }
 
-    // HOD: id=2
-    await run(
-      `INSERT INTO users (email, password_hash, name, staff_id, role, department_id, designation, phone, qualification, specialization, date_of_joining, academic_year, semester) 
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-      ['hod.it@mzcet.edu.in', passwordHash, 'Dr. P. Rajkumar', 'mzcet@it_hod', 'hod', 1, 'Professor & Head', '9443212345', 'M.Tech., Ph.D.', 'Data Science', '2010-06-01', '2025-2026', 'ODD']
-    );
+      // Seed academic years
+      await run("INSERT INTO academic_years (year_name, active) VALUES (?, ?)", ['2025-2026', 1]);
 
-    // Admin: id=3
-    await run(
-      `INSERT INTO users (email, password_hash, name, staff_id, role, designation) 
-       VALUES (?, ?, ?, ?, ?, ?)`,
-      ['admin@mzcet.edu.in', passwordHash, 'MZCET Admin Portal', 'mzcet@admin', 'admin', 'System Administrator']
-    );
+      // Seed demo accounts with password mzcet@1234
+      const passwordHash = await bcrypt.hash('mzcet@1234', 10);
+      
+      // Staff: id=1
+      await run(
+        `INSERT INTO users (email, password_hash, name, staff_id, role, department_id, designation, phone, qualification, specialization, date_of_joining, academic_year, semester) 
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+        ['staff@mzcet.edu.in', passwordHash, 'Mrs. V Brindha Devi', 'mzcet@it_coordinator', 'staff', 1, 'Assistant Professor', '9876543210', 'M.E., Ph.D.', 'Cloud Computing', '2018-06-15', '2025-2026', 'ODD']
+      );
 
-    // Associate HOD to Department
-    await run('UPDATE departments SET hod_id = 2 WHERE id = 1');
+      // HOD: id=2
+      await run(
+        `INSERT INTO users (email, password_hash, name, staff_id, role, department_id, designation, phone, qualification, specialization, date_of_joining, academic_year, semester) 
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+        ['hod.it@mzcet.edu.in', passwordHash, 'Dr. P. Rajkumar', 'mzcet@it_hod', 'hod', 1, 'Professor & Head', '9443212345', 'M.Tech., Ph.D.', 'Data Science', '2010-06-01', '2025-2026', 'ODD']
+      );
 
-    console.log('Database Seeding: Local SQLite seeded successfully!');
-  } else {
-    // Update names, passwords, and staff_ids for existing seed accounts
-    const newHash = await bcrypt.hash('mzcet@1234', 10);
-    await run("UPDATE users SET name = 'Mrs. V Brindha Devi', password_hash = ?, staff_id = 'mzcet@it_coordinator' WHERE email = 'staff@mzcet.edu.in' OR staff_id = 'mzcet@it_faculty' OR staff_id = 'mzcet@it_coordinator'", [newHash]);
-    await run("UPDATE users SET name = 'Dr. P. Rajkumar', password_hash = ?, staff_id = 'mzcet@it_hod' WHERE email = 'hod.it@mzcet.edu.in' OR staff_id = 'mzcet@it_hod'", [newHash]);
-    await run("UPDATE users SET password_hash = ?, staff_id = 'mzcet@admin' WHERE email = 'admin@mzcet.edu.in' OR staff_id = 'mzcet@admin'", [newHash]);
+      // Admin: id=3
+      await run(
+        `INSERT INTO users (email, password_hash, name, staff_id, role, designation) 
+         VALUES (?, ?, ?, ?, ?, ?)`,
+        ['admin@mzcet.edu.in', passwordHash, 'MZCET Admin Portal', 'mzcet@admin', 'admin', 'System Administrator']
+      );
+
+      // Associate HOD to Department
+      await run('UPDATE departments SET hod_id = 2 WHERE id = 1');
+
+      console.log('Database Seeding: Local SQLite seeded successfully!');
+    } else {
+      // Update names, passwords, and staff_ids for existing seed accounts
+      const newHash = await bcrypt.hash('mzcet@1234', 10);
+      await run("UPDATE users SET name = 'Mrs. V Brindha Devi', password_hash = ?, staff_id = 'mzcet@it_coordinator' WHERE email = 'staff@mzcet.edu.in' OR staff_id = 'mzcet@it_faculty' OR staff_id = 'mzcet@it_coordinator'", [newHash]);
+      await run("UPDATE users SET name = 'Dr. P. Rajkumar', password_hash = ?, staff_id = 'mzcet@it_hod' WHERE email = 'hod.it@mzcet.edu.in' OR staff_id = 'mzcet@it_hod'", [newHash]);
+      await run("UPDATE users SET password_hash = ?, staff_id = 'mzcet@admin' WHERE email = 'admin@mzcet.edu.in' OR staff_id = 'mzcet@admin'", [newHash]);
+    }
+  } catch (err) {
+    console.log('SQLite fallback unavailable:', err.message);
   }
 }
 
