@@ -11,11 +11,14 @@ import {
   Calendar,
   AlertTriangle,
   FolderOpen,
-  RefreshCw
+  RefreshCw,
+  Search,
+  History
 } from 'lucide-react';
 import type { FullReport } from '../types';
 
 interface StaffDashboardProps {
+  currentTab?: string;
   onCreateReport: (type: 'weekly' | 'monthly') => void;
   onEditReport: (id: number, type: 'weekly' | 'monthly') => void;
   onPreviewReport: (id: number) => void;
@@ -34,6 +37,7 @@ interface StaffDashboardMetrics {
 }
 
 export const StaffDashboard: React.FC<StaffDashboardProps> = ({ 
+  currentTab,
   onCreateReport, 
   onEditReport, 
   onPreviewReport 
@@ -43,6 +47,11 @@ export const StaffDashboard: React.FC<StaffDashboardProps> = ({
   const [history, setHistory] = useState<FullReport[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+
+  // Search & Filter controls for Reports History
+  const [searchQuery, setSearchQuery] = useState('');
+  const [statusFilter, setStatusFilter] = useState('all');
+  const [typeFilter, setTypeFilter] = useState('all');
 
   const fetchDashboardData = async () => {
     try {
@@ -190,6 +199,19 @@ export const StaffDashboard: React.FC<StaffDashboardProps> = ({
     }
   };
 
+  // Filter history based on search & dropdowns
+  const filteredHistory = history.filter(report => {
+    const matchesQuery = searchQuery === '' || 
+      report.month?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      String(report.id).includes(searchQuery) ||
+      report.status?.toLowerCase().includes(searchQuery.toLowerCase());
+
+    const matchesStatus = statusFilter === 'all' || report.status === statusFilter;
+    const matchesType = typeFilter === 'all' || report.report_type === typeFilter;
+
+    return matchesQuery && matchesStatus && matchesType;
+  });
+
   if (loading && !metrics) {
     return (
       <div className="flex items-center justify-center h-96">
@@ -204,30 +226,123 @@ export const StaffDashboard: React.FC<StaffDashboardProps> = ({
   return (
     <div className="space-y-6">
       
-      {/* Welcome Banner */}
-      <div className="bg-gradient-to-r from-blue-900 via-blue-800 to-indigo-900 text-white rounded-3xl p-7 shadow-xl relative overflow-hidden border border-blue-700/50">
-        <div className="relative z-10 space-y-2">
-          <div className="inline-block px-3 py-1 bg-white/10 backdrop-blur-md rounded-full text-[11px] font-bold tracking-widest text-blue-200 uppercase">
-            Faculty Reporting Hub
+      {currentTab === 'reports' ? (
+        /* Dedicated My Reports History Page Banner */
+        <div className="bg-gradient-to-r from-slate-900 via-slate-800 to-indigo-950 text-white rounded-3xl p-7 shadow-xl relative overflow-hidden border border-slate-700/50 flex flex-col md:flex-row md:items-center justify-between gap-4">
+          <div className="relative z-10 space-y-1.5">
+            <div className="inline-flex items-center gap-1.5 px-3 py-1 bg-blue-500/20 text-blue-300 rounded-full text-[11px] font-extrabold uppercase tracking-wider border border-blue-400/20">
+              <History className="h-3.5 w-3.5" /> Reports Archive & History
+            </div>
+            <h2 className="text-2xl font-black text-white">My Reports History</h2>
+            <p className="text-xs text-slate-300 font-medium max-w-xl">
+              Access, search, filter, edit drafts, and download official PDF, DOCX, XLSX & PPTX reports
+            </p>
           </div>
-          <h2 className="text-2xl font-black text-white">Welcome back, {user?.name}!</h2>
-          <p className="text-xs text-blue-200 font-medium max-w-xl">Mount Zion College of Engineering & Technology — Weekly and Monthly Activity Portal</p>
-          <div className="flex flex-wrap gap-3 text-xs font-bold text-slate-100 pt-3">
-            <span className="flex items-center gap-1.5 bg-slate-900/50 backdrop-blur-md py-1.5 px-3.5 rounded-xl border border-white/10">
-              <Calendar className="h-4 w-4 text-blue-300" /> AY: {metrics?.currentAcademicYear || '2025-2026'}
-            </span>
-            <span className="flex items-center gap-1.5 bg-slate-900/50 backdrop-blur-md py-1.5 px-3.5 rounded-xl border border-white/10">
-              <Layers className="h-4 w-4 text-indigo-300" /> Sem: {metrics?.currentSemester || 'ODD'}
-            </span>
-            <span className="flex items-center gap-1.5 bg-slate-900/50 backdrop-blur-md py-1.5 px-3.5 rounded-xl border border-white/10 text-emerald-300">
-              Dept: {user?.department_name || 'Information Technology'}
-            </span>
+          <div className="relative z-10 flex flex-wrap gap-2.5">
+            <button 
+              onClick={() => onCreateReport('weekly')}
+              className="bg-blue-600 hover:bg-blue-500 text-white font-bold text-xs py-2.5 px-4 rounded-xl shadow-lg transition-all flex items-center gap-1.5"
+            >
+              <FilePlus className="h-4 w-4" /> + New Weekly Report
+            </button>
+            <button 
+              onClick={() => onCreateReport('monthly')}
+              className="bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-xs py-2.5 px-4 rounded-xl shadow-lg transition-all flex items-center gap-1.5"
+            >
+              <FilePlus className="h-4 w-4" /> + New Monthly Report
+            </button>
+          </div>
+          <div className="absolute right-4 -bottom-6 opacity-10 text-white pointer-events-none">
+            <FolderOpen className="h-56 w-56" />
           </div>
         </div>
-        <div className="absolute right-4 -bottom-6 opacity-10 text-white pointer-events-none">
-          <FolderOpen className="h-56 w-56" />
-        </div>
-      </div>
+      ) : (
+        /* Welcome Banner & Metrics for Main Dashboard */
+        <>
+          <div className="bg-gradient-to-r from-blue-900 via-blue-800 to-indigo-900 text-white rounded-3xl p-7 shadow-xl relative overflow-hidden border border-blue-700/50">
+            <div className="relative z-10 space-y-2">
+              <div className="inline-block px-3 py-1 bg-white/10 backdrop-blur-md rounded-full text-[11px] font-bold tracking-widest text-blue-200 uppercase">
+                Faculty Reporting Hub
+              </div>
+              <h2 className="text-2xl font-black text-white">Welcome back, {user?.name}!</h2>
+              <p className="text-xs text-blue-200 font-medium max-w-xl">Mount Zion College of Engineering & Technology — Weekly and Monthly Activity Portal</p>
+              <div className="flex flex-wrap gap-3 text-xs font-bold text-slate-100 pt-3">
+                <span className="flex items-center gap-1.5 bg-slate-900/50 backdrop-blur-md py-1.5 px-3.5 rounded-xl border border-white/10">
+                  <Calendar className="h-4 w-4 text-blue-300" /> AY: {metrics?.currentAcademicYear || '2025-2026'}
+                </span>
+                <span className="flex items-center gap-1.5 bg-slate-900/50 backdrop-blur-md py-1.5 px-3.5 rounded-xl border border-white/10">
+                  <Layers className="h-4 w-4 text-indigo-300" /> Sem: {metrics?.currentSemester || 'ODD'}
+                </span>
+                <span className="flex items-center gap-1.5 bg-slate-900/50 backdrop-blur-md py-1.5 px-3.5 rounded-xl border border-white/10 text-emerald-300">
+                  Dept: {user?.department_name || 'Information Technology'}
+                </span>
+              </div>
+            </div>
+            <div className="absolute right-4 -bottom-6 opacity-10 text-white pointer-events-none">
+              <FolderOpen className="h-56 w-56" />
+            </div>
+          </div>
+
+          {metrics?.metrics && (
+            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-4">
+              <div className="bg-white border border-slate-200/80 p-5 rounded-2xl shadow-sm hover:shadow-md transition-shadow space-y-1">
+                <span className="text-[10px] font-extrabold text-slate-400 uppercase block tracking-wider">Total Reports</span>
+                <p className="text-3xl font-black text-slate-800">{metrics.metrics.total}</p>
+              </div>
+              <div className="bg-white border border-slate-200/80 p-5 rounded-2xl shadow-sm hover:shadow-md transition-shadow space-y-1">
+                <span className="text-[10px] font-extrabold text-slate-400 uppercase block tracking-wider">Drafts</span>
+                <p className="text-3xl font-black text-slate-500">{metrics.metrics.drafts}</p>
+              </div>
+              <div className="bg-white border border-slate-200/80 p-5 rounded-2xl shadow-sm hover:shadow-md transition-shadow space-y-1">
+                <span className="text-[10px] font-extrabold text-slate-400 uppercase block tracking-wider">Under Review</span>
+                <p className="text-3xl font-black text-blue-600">{metrics.metrics.submitted}</p>
+              </div>
+              <div className="bg-white border border-slate-200/80 p-5 rounded-2xl shadow-sm hover:shadow-md transition-shadow space-y-1">
+                <span className="text-[10px] font-extrabold text-slate-400 uppercase block tracking-wider">Approved</span>
+                <p className="text-3xl font-black text-emerald-600">{metrics.metrics.approved}</p>
+              </div>
+              <div className="bg-white border border-slate-200/80 p-5 rounded-2xl shadow-sm hover:shadow-md transition-shadow space-y-1">
+                <span className="text-[10px] font-extrabold text-slate-400 uppercase block tracking-wider">Corrections</span>
+                <p className="text-3xl font-black text-rose-600">{metrics.metrics.rejected}</p>
+              </div>
+            </div>
+          )}
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+            <button 
+              onClick={() => onCreateReport('weekly')}
+              className="bg-white border-2 border-slate-200 hover:border-blue-500 p-6 rounded-3xl shadow-sm hover:shadow-xl flex items-center gap-5 text-left transition-all duration-300 group transform hover:-translate-y-0.5"
+            >
+              <div className="p-4 bg-blue-50 group-hover:bg-blue-600 text-blue-600 group-hover:text-white rounded-2xl transition-all shadow-md group-hover:shadow-blue-500/30">
+                <FilePlus className="h-7 w-7" />
+              </div>
+              <div>
+                <div className="flex items-center gap-2">
+                  <h4 className="font-extrabold text-slate-800 text-base group-hover:text-blue-600 transition-colors">Create Weekly Report</h4>
+                  <span className="text-[10px] font-extrabold px-2 py-0.5 rounded-full bg-blue-100 text-blue-800 uppercase">Weekly</span>
+                </div>
+                <p className="text-xs text-slate-500 mt-1">Submit classes taken, hours, syllabus progression, and tests for this week</p>
+              </div>
+            </button>
+
+            <button 
+              onClick={() => onCreateReport('monthly')}
+              className="bg-white border-2 border-slate-200 hover:border-indigo-500 p-6 rounded-3xl shadow-sm hover:shadow-xl flex items-center gap-5 text-left transition-all duration-300 group transform hover:-translate-y-0.5"
+            >
+              <div className="p-4 bg-indigo-50 group-hover:bg-indigo-600 text-indigo-600 group-hover:text-white rounded-2xl transition-all shadow-md group-hover:shadow-indigo-500/30">
+                <FilePlus className="h-7 w-7" />
+              </div>
+              <div>
+                <div className="flex items-center gap-2">
+                  <h4 className="font-extrabold text-slate-800 text-base group-hover:text-indigo-600 transition-colors">Create Monthly Report</h4>
+                  <span className="text-[10px] font-extrabold px-2 py-0.5 rounded-full bg-indigo-100 text-indigo-800 uppercase">Monthly</span>
+                </div>
+                <p className="text-xs text-slate-500 mt-1">Comprehensive aggregation including research, mentoring, FDPs, labs & plans</p>
+              </div>
+            </button>
+          </div>
+        </>
+      )}
 
       {error && (
         <div className="bg-red-50 border border-red-200 text-red-700 p-4 rounded-2xl text-sm font-semibold flex items-center gap-2 shadow-sm">
@@ -236,91 +351,67 @@ export const StaffDashboard: React.FC<StaffDashboardProps> = ({
         </div>
       )}
 
-      {/* Metrics Cards */}
-      {metrics?.metrics && (
-        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-4">
-          <div className="bg-white border border-slate-200/80 p-5 rounded-2xl shadow-sm hover:shadow-md transition-shadow space-y-1">
-            <span className="text-[10px] font-extrabold text-slate-400 uppercase block tracking-wider">Total Reports</span>
-            <p className="text-3xl font-black text-slate-800">{metrics.metrics.total}</p>
-          </div>
-
-          <div className="bg-white border border-slate-200/80 p-5 rounded-2xl shadow-sm hover:shadow-md transition-shadow space-y-1">
-            <span className="text-[10px] font-extrabold text-slate-400 uppercase block tracking-wider">Drafts</span>
-            <p className="text-3xl font-black text-slate-500">{metrics.metrics.drafts}</p>
-          </div>
-
-          <div className="bg-white border border-slate-200/80 p-5 rounded-2xl shadow-sm hover:shadow-md transition-shadow space-y-1">
-            <span className="text-[10px] font-extrabold text-slate-400 uppercase block tracking-wider">Under Review</span>
-            <p className="text-3xl font-black text-blue-600">{metrics.metrics.submitted}</p>
-          </div>
-
-          <div className="bg-white border border-slate-200/80 p-5 rounded-2xl shadow-sm hover:shadow-md transition-shadow space-y-1">
-            <span className="text-[10px] font-extrabold text-slate-400 uppercase block tracking-wider">Approved</span>
-            <p className="text-3xl font-black text-emerald-600">{metrics.metrics.approved}</p>
-          </div>
-
-          <div className="bg-white border border-slate-200/80 p-5 rounded-2xl shadow-sm hover:shadow-md transition-shadow space-y-1">
-            <span className="text-[10px] font-extrabold text-slate-400 uppercase block tracking-wider">Corrections</span>
-            <p className="text-3xl font-black text-rose-600">{metrics.metrics.rejected}</p>
-          </div>
-        </div>
-      )}
-
-      {/* Action Buttons */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-        <button 
-          onClick={() => onCreateReport('weekly')}
-          className="bg-white border-2 border-slate-200 hover:border-blue-500 p-6 rounded-3xl shadow-sm hover:shadow-xl flex items-center gap-5 text-left transition-all duration-300 group transform hover:-translate-y-0.5"
-        >
-          <div className="p-4 bg-blue-50 group-hover:bg-blue-600 text-blue-600 group-hover:text-white rounded-2xl transition-all shadow-md group-hover:shadow-blue-500/30">
-            <FilePlus className="h-7 w-7" />
-          </div>
-          <div>
-            <div className="flex items-center gap-2">
-              <h4 className="font-extrabold text-slate-800 text-base group-hover:text-blue-600 transition-colors">Create Weekly Report</h4>
-              <span className="text-[10px] font-extrabold px-2 py-0.5 rounded-full bg-blue-100 text-blue-800 uppercase">Weekly</span>
-            </div>
-            <p className="text-xs text-slate-500 mt-1">Submit classes taken, hours, syllabus progression, and tests for this week</p>
-          </div>
-        </button>
-
-        <button 
-          onClick={() => onCreateReport('monthly')}
-          className="bg-white border-2 border-slate-200 hover:border-indigo-500 p-6 rounded-3xl shadow-sm hover:shadow-xl flex items-center gap-5 text-left transition-all duration-300 group transform hover:-translate-y-0.5"
-        >
-          <div className="p-4 bg-indigo-50 group-hover:bg-indigo-600 text-indigo-600 group-hover:text-white rounded-2xl transition-all shadow-md group-hover:shadow-indigo-500/30">
-            <FilePlus className="h-7 w-7" />
-          </div>
-          <div>
-            <div className="flex items-center gap-2">
-              <h4 className="font-extrabold text-slate-800 text-base group-hover:text-indigo-600 transition-colors">Create Monthly Report</h4>
-              <span className="text-[10px] font-extrabold px-2 py-0.5 rounded-full bg-indigo-100 text-indigo-800 uppercase">Monthly</span>
-            </div>
-            <p className="text-xs text-slate-500 mt-1">Comprehensive aggregation including research, mentoring, FDPs, labs & plans</p>
-          </div>
-        </button>
-      </div>
-
       {/* Submission History Table */}
       <div className="bg-white border border-slate-200/80 rounded-3xl shadow-sm overflow-hidden">
-        <div className="p-6 border-b flex justify-between items-center bg-slate-50/70">
+        <div className="p-4 sm:p-6 border-b flex flex-col md:flex-row md:items-center justify-between gap-4 bg-slate-50/70">
           <div>
-            <h3 className="font-black text-slate-800 text-base">Report Submission History</h3>
-            <p className="text-xs text-slate-500 mt-0.5">Track approvals, download completed DOCX & PPTX documents with MZCET branding</p>
+            <h3 className="font-black text-slate-800 text-base flex items-center gap-2">
+              <History className="h-5 w-5 text-blue-600" />
+              {currentTab === 'reports' ? 'All Activity Reports' : 'Report Submission History'}
+            </h3>
+            <p className="text-xs text-slate-500 mt-0.5">Track approvals, view details, and download completed PDF, DOCX, XLSX & PPTX documents</p>
           </div>
-          <button 
-            onClick={fetchDashboardData} 
-            className="inline-flex items-center gap-1.5 text-xs font-bold text-blue-600 hover:text-blue-800 bg-blue-50 hover:bg-blue-100 px-3 py-1.5 rounded-xl transition-all"
-          >
-            <RefreshCw className="h-3.5 w-3.5" /> Refresh
-          </button>
+
+          <div className="flex flex-wrap items-center gap-3">
+            <div className="relative">
+              <Search className="h-4 w-4 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+              <input
+                type="text"
+                placeholder="Search Month, ID..."
+                className="pl-9 pr-3 py-1.5 border border-slate-200 rounded-xl text-xs font-semibold text-slate-800 outline-none focus:ring-2 focus:ring-blue-500 bg-white w-40 sm:w-48"
+                value={searchQuery}
+                onChange={e => setSearchQuery(e.target.value)}
+              />
+            </div>
+
+            <select
+              className="border border-slate-200 rounded-xl px-3 py-1.5 text-xs font-bold text-slate-700 bg-white outline-none focus:ring-2 focus:ring-blue-500"
+              value={statusFilter}
+              onChange={e => setStatusFilter(e.target.value)}
+            >
+              <option value="all">All Statuses</option>
+              <option value="Draft">Draft</option>
+              <option value="Submitted">Under Review</option>
+              <option value="Approved">Approved</option>
+              <option value="Rejected">Correction Required</option>
+            </select>
+
+            <select
+              className="border border-slate-200 rounded-xl px-3 py-1.5 text-xs font-bold text-slate-700 bg-white outline-none focus:ring-2 focus:ring-blue-500"
+              value={typeFilter}
+              onChange={e => setTypeFilter(e.target.value)}
+            >
+              <option value="all">All Types</option>
+              <option value="weekly">Weekly</option>
+              <option value="monthly">Monthly</option>
+            </select>
+
+            <button 
+              onClick={fetchDashboardData} 
+              className="inline-flex items-center gap-1.5 text-xs font-bold text-blue-600 hover:text-blue-800 bg-blue-50 hover:bg-blue-100 px-3 py-1.5 rounded-xl transition-all border border-blue-200/60"
+            >
+              <RefreshCw className="h-3.5 w-3.5" /> Refresh
+            </button>
+          </div>
         </div>
 
-        {history.length === 0 ? (
+        {filteredHistory.length === 0 ? (
           <div className="p-16 text-center text-slate-400 space-y-2">
             <FolderOpen className="h-12 w-12 mx-auto text-slate-300" />
-            <p className="font-bold text-slate-600">No activity reports created yet.</p>
-            <p className="text-xs text-slate-400">Click on "Create Weekly Report" or "Create Monthly Report" above to start your first submission.</p>
+            <p className="font-bold text-slate-600">No activity reports found.</p>
+            <p className="text-xs text-slate-400">
+              {history.length === 0 ? 'Click on "Create Weekly Report" or "Create Monthly Report" above to start your first submission.' : 'Try adjusting your search or filter criteria above.'}
+            </p>
           </div>
         ) : (
           <div className="overflow-x-auto">
@@ -340,7 +431,7 @@ export const StaffDashboard: React.FC<StaffDashboardProps> = ({
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100 text-slate-700">
-                {history.map((report) => (
+                {filteredHistory.map((report) => (
                   <tr key={report.id} className="hover:bg-slate-50/80 transition-colors">
                     <td className="p-4 pl-6 font-mono font-bold text-slate-400 text-xs">#{report.id}</td>
                     <td className="p-4">

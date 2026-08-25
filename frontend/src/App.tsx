@@ -51,12 +51,11 @@ const MainLayout: React.FC = () => {
   // Handlers for report navigation
   const handleTabSelect = (tab: string) => {
     setPreviewReportId(null);
+    setEditReportId(null);
     if (tab === 'new_weekly') {
       setActiveReportType('weekly');
-      setEditReportId(null);
     } else if (tab === 'new_monthly') {
       setActiveReportType('monthly');
-      setEditReportId(null);
     }
     setCurrentTab(tab);
   };
@@ -150,6 +149,7 @@ const MainLayout: React.FC = () => {
         } else {
           return (
             <StaffDashboard 
+              currentTab={currentTab}
               onCreateReport={handleCreateReport} 
               onEditReport={handleEditReport} 
               onPreviewReport={handlePreviewReport} 
