@@ -15,10 +15,14 @@ const supabase = isSupabaseActive
   ? createClient(process.env.SUPABASE_URL, process.env.SUPABASE_SERVICE_ROLE_KEY) 
   : null;
 
-// Ensure upload folder exists for local storage fallback
-const uploadDir = path.resolve('uploads');
+// Ensure upload folder exists for local storage fallback (/tmp for Vercel)
+const uploadDir = path.resolve(process.env.VERCEL ? '/tmp/uploads' : 'uploads');
 if (!fs.existsSync(uploadDir)) {
-  fs.mkdirSync(uploadDir, { recursive: true });
+  try {
+    fs.mkdirSync(uploadDir, { recursive: true });
+  } catch (e) {
+    console.error('Upload dir creation warning:', e.message);
+  }
 }
 
 // Multer storage selector
