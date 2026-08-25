@@ -66,11 +66,16 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       try {
         return await res.json();
       } catch (e) {
-        // Fallback to text
+        // Fallback to text handler below
       }
     }
-    const text = await res.text();
-    throw new Error(text || `Server responded with status ${res.status}`);
+    const rawText = await res.text();
+    console.error('Server Technical Output:', res.status, rawText);
+
+    if (rawText.includes('FUNCTION_INVOCATION_FAILED') || res.status >= 500) {
+      throw new Error('Unable to connect to the server. Please try again.');
+    }
+    throw new Error(rawText || `Authentication service is temporarily unavailable.`);
   };
 
   const login = async (email: string, password: string): Promise<User> => {

@@ -541,14 +541,14 @@ export const db = {
       try {
         // 1. Try matching by email
         let { data, error } = await supabase.from('users')
-          .select('*, departments(department_name)')
+          .select('*, departments!users_department_id_fkey(department_name)')
           .eq('email', identifier)
           .maybeSingle();
 
         // 2. If not found by email, try matching by staff_id
         if (!data) {
           const res = await supabase.from('users')
-            .select('*, departments(department_name)')
+            .select('*, departments!users_department_id_fkey(department_name)')
             .eq('staff_id', identifier)
             .maybeSingle();
           data = res.data;
@@ -570,7 +570,7 @@ export const db = {
 
   getUserById: async (id) => {
     if (isSupabaseActive) {
-      const { data, error } = await supabase.from('users').select('*, departments(department_name)').eq('id', id).maybeSingle();
+      const { data, error } = await supabase.from('users').select('*, departments!users_department_id_fkey(department_name)').eq('id', id).maybeSingle();
       if (error) throw error;
       if (data && data.departments) {
         data.department_name = data.departments.department_name;
@@ -584,7 +584,7 @@ export const db = {
 
   getUserBySupabaseUid: async (uid) => {
     if (isSupabaseActive) {
-      const { data, error } = await supabase.from('users').select('*, departments(department_name)').eq('supabase_uid', uid).maybeSingle();
+      const { data, error } = await supabase.from('users').select('*, departments!users_department_id_fkey(department_name)').eq('supabase_uid', uid).maybeSingle();
       if (error) throw error;
       if (data && data.departments) {
         data.department_name = data.departments.department_name;
@@ -638,7 +638,7 @@ export const db = {
 
   getAllUsers: async () => {
     if (isSupabaseActive) {
-      const { data, error } = await supabase.from('users').select('*, departments(department_name)');
+      const { data, error } = await supabase.from('users').select('*, departments!users_department_id_fkey(department_name)');
       if (error) throw error;
       return data.map(u => ({ ...u, department_name: u.departments?.department_name }));
     } else {
@@ -855,7 +855,7 @@ export const db = {
   getReportById: async (id) => {
     if (isSupabaseActive) {
       const { data: report, error } = await supabase.from('reports')
-        .select('*, users!reports_staff_id_fkey(name, staff_id, designation, phone, qualification, specialization, departments(department_name), users(name))')
+        .select('*, users!reports_staff_id_fkey(name, staff_id, designation, phone, qualification, specialization, departments!users_department_id_fkey(department_name), users(name))')
         .eq('id', id).maybeSingle();
       if (error) throw error;
       if (!report) return null;
@@ -992,7 +992,7 @@ export const db = {
   getReports: async (filters = {}) => {
     if (isSupabaseActive) {
       let query = supabase.from('reports')
-        .select('*, users!reports_staff_id_fkey(name, staff_id, designation, department_id, departments(department_name))', { count: 'exact' })
+        .select('*, users!reports_staff_id_fkey(name, staff_id, designation, department_id, departments!users_department_id_fkey(department_name))', { count: 'exact' })
         .order('created_at', { ascending: false });
 
       if (filters.staff_id) query = query.eq('staff_id', filters.staff_id);
