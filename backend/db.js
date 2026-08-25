@@ -537,16 +537,31 @@ export async function initializeDatabase() {
 export const db = {
   // Users CRUD
   getUserByEmail: async (identifier) => {
-    if (isSupabaseActive) {
-      const { data, error } = await supabase.from('users')
-        .select('*, departments(department_name)')
-        .or(`email.eq.${identifier},staff_id.eq.${identifier}`)
-        .maybeSingle();
-      if (error) throw error;
-      if (data && data.departments) {
-        data.department_name = data.departments.department_name;
+    if (isSupabaseActive && supabase) {
+      try {
+        // 1. Try matching by email
+        let { data, error } = await supabase.from('users')
+          .select('*, departments(department_name)')
+          .eq('email', identifier)
+          .maybeSingle();
+
+        // 2. If not found by email, try matching by staff_id
+        if (!data) {
+          const res = await supabase.from('users')
+            .select('*, departments(department_name)')
+            .eq('staff_id', identifier)
+            .maybeSingle();
+          data = res.data;
+        }
+
+        if (data && data.departments) {
+          data.department_name = data.departments.department_name;
+        }
+        return data || null;
+      } catch (err) {
+        console.error('getUserByEmail error:', err.message);
+        return null;
       }
-      return data;
     } else {
       const u = await get('SELECT u.*, d.department_name FROM users u LEFT JOIN departments d ON u.department_id = d.id WHERE u.email = ? OR u.staff_id = ?', [identifier, identifier]);
       return u || null;

@@ -13,6 +13,14 @@ import documentsRouter from '../backend/routes/documents.js';
 
 dotenv.config();
 
+// Ensure process.env has default Supabase credentials on Vercel
+if (!process.env.SUPABASE_URL) {
+  process.env.SUPABASE_URL = 'https://rbzrnnlsmkryoawjzgew.supabase.co';
+}
+if (!process.env.SUPABASE_SERVICE_ROLE_KEY) {
+  process.env.SUPABASE_SERVICE_ROLE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJienJubmxzbWtyeW9hd2p6Z2V3Iiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc4NzIyNDk0MiwiZXhwIjoyMTAyODAwOTQyfQ.gBhX7FxdBXcSCSoFR3UKIBcP8eG2fJ1AnKbTxVC6isg';
+}
+
 const app = express();
 
 app.use(cors());
@@ -44,14 +52,21 @@ app.use(async (req, res, next) => {
   next();
 });
 
-// Mount REST API endpoints
+// Mount REST API endpoints for both /api/path and /path
 app.use('/api/auth', authRouter);
+app.use('/auth', authRouter);
+
 app.use('/api/reports', reportsRouter);
+app.use('/reports', reportsRouter);
+
 app.use('/api/analytics', analyticsRouter);
+app.use('/analytics', analyticsRouter);
+
 app.use('/api/documents', documentsRouter);
+app.use('/documents', documentsRouter);
 
 // Health check
-app.get('/api/health', (req, res) => {
+app.get(['/api/health', '/health'], (req, res) => {
   res.json({ 
     status: 'ok', 
     environment: process.env.VERCEL ? 'vercel-serverless' : 'local', 
