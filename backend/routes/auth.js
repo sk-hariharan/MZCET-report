@@ -105,73 +105,71 @@ router.post('/login', async (req, res) => {
   const { email, password } = req.body;
 
   if (!email || !password) {
-    return res.status(400).json({ message: 'Email and password are required' });
+    return res.status(400).json({ message: 'Login ID / Email and password are required' });
   }
 
   try {
-    if (isSupabaseActive) {
-      // Log in via Supabase Auth
-      const { data, error } = await supabase.auth.signInWithPassword({
-        email,
-        password
-      });
+    // 1. Check user profile in database by email address or staff ID
+    const profile = await db.getUserByEmail(email);
 
-      if (error) {
-        return res.status(400).json({ message: error.message });
-      }
-
-      const profile = await db.getUserBySupabaseUid(data.user.id);
-      if (!profile) {
-        return res.status(404).json({ message: 'Login successful, but relational staff profile was not found' });
-      }
-
-      res.json({
-        token: data.session.access_token,
-        user: {
-          id: profile.id,
-          email: profile.email,
-          name: profile.name,
-          role: profile.role,
-          staff_id: profile.staff_id,
-          department_id: profile.department_id,
-          department_name: profile.department_name
-        }
-      });
-    } else {
-      // Local SQLite login check
-      const profile = await db.getUserByEmail(email);
-      if (!profile) {
-        return res.status(400).json({ message: 'Invalid email or password' });
-      }
-
+    if (profile && profile.password_hash) {
       const isPasswordMatch = await bcrypt.compare(password, profile.password_hash);
-      if (!isPasswordMatch) {
-        return res.status(400).json({ message: 'Invalid email or password' });
+      if (isPasswordMatch) {
+        const token = jwt.sign(
+          { id: profile.id, email: profile.email, role: profile.role },
+          process.env.JWT_SECRET || 'mzcet_facultyreport_secure_jwt_secret_key_2026',
+          { expiresIn: '24h' }
+        );
+
+        return res.json({
+          token,
+          user: {
+            id: profile.id,
+            email: profile.email,
+            name: profile.name,
+            role: profile.role,
+            staff_id: profile.staff_id,
+            department_id: profile.department_id,
+            department_name: profile.department_name
+          }
+        });
       }
-
-      // Generate local JWT token
-      const token = jwt.sign(
-        { id: profile.id, email: profile.email, role: profile.role },
-        process.env.JWT_SECRET || 'mzcet_facultyreport_secure_jwt_secret_key_2026',
-        { expiresIn: '24h' }
-      );
-
-      res.json({
-        token,
-        user: {
-          id: profile.id,
-          email: profile.email,
-          name: profile.name,
-          role: profile.role,
-          staff_id: profile.staff_id,
-          department_id: profile.department_id,
-          department_name: profile.department_name
-        }
-      });
     }
+
+    // 2. Fallback to Supabase Auth if profile with password_hash wasn't matched
+    if (isSupabaseActive && supabase) {
+      try {
+        const { data, error } = await supabase.auth.signInWithPassword({
+          email,
+          password
+        });
+
+        if (!error && data?.user) {
+          const suProfile = await db.getUserBySupabaseUid(data.user.id);
+          if (suProfile) {
+            return res.json({
+              token: data.session.access_token,
+              user: {
+                id: suProfile.id,
+                email: suProfile.email,
+                name: suProfile.name,
+                role: suProfile.role,
+                staff_id: suProfile.staff_id,
+                department_id: suProfile.department_id,
+                department_name: suProfile.department_name
+              }
+            });
+          }
+        }
+      } catch (suErr) {
+        console.warn('Supabase Auth fallback check error:', suErr.message);
+      }
+    }
+
+    return res.status(400).json({ message: 'Invalid Login ID / Email address or password' });
   } catch (error) {
     console.error('Login Error:', error);
-    res.status(500).json({ message: 'An error occurred during authentication' });
+    res.status(500).json({ message: error.message || 'An error occurred during authentication' });
   }
 });
 

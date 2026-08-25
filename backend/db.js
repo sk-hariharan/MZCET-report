@@ -1,4 +1,3 @@
-import sqlite3 from 'sqlite3';
 import { createClient } from '@supabase/supabase-js';
 import bcrypt from 'bcryptjs';
 import path from 'path';
@@ -6,31 +5,26 @@ import dotenv from 'dotenv';
 
 dotenv.config();
 
-const isSupabaseConfigured = !!(process.env.SUPABASE_URL && process.env.SUPABASE_SERVICE_ROLE_KEY);
+// Fallback defaults for seamless Vercel serverless deployment
+const SUPABASE_DEFAULT_URL = 'https://rbzrnnlsmkryoawjzgew.supabase.co';
+const SUPABASE_DEFAULT_SERVICE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJienJubmxzbWtyeW9hd2p6Z2V3Iiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc4NzIyNDk0MiwiZXhwIjoyMTAyODAwOTQyfQ.gBhX7FxdBXcSCSoFR3UKIBcP8eG2fJ1AnKbTxVC6isg';
+
+const supabaseUrl = process.env.SUPABASE_URL || SUPABASE_DEFAULT_URL;
+const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY || SUPABASE_DEFAULT_SERVICE_KEY;
 
 let supabase = null;
 let sqliteDb = null;
+let sqlite3 = null;
 let isSupabaseActive = false;
 
-const dbPath = path.resolve(process.env.VERCEL ? '/tmp/facultyreport.db' : 'facultyreport.db');
-sqliteDb = new sqlite3.Database(dbPath);
-
-if (isSupabaseConfigured) {
-  supabase = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_SERVICE_ROLE_KEY);
-  // Perform quick schema verification
+if (supabaseUrl && supabaseKey) {
   try {
-    const { error } = await supabase.from('users').select('id').limit(1);
-    if (!error) {
-      isSupabaseActive = true;
-      console.log('Database Mode: Connected to Supabase PostgreSQL Cloud');
-    } else {
-      console.log('Database Mode: Supabase credentials found, but remote tables pending schema initialization. Using local SQLite.');
-    }
-  } catch (err) {
-    console.log('Database Mode: Using local SQLite fallback (Supabase schema pending).');
+    supabase = createClient(supabaseUrl, supabaseKey);
+    isSupabaseActive = true;
+    console.log('Database Mode: Supabase Client initialized with Cloud PostgreSQL');
+  } catch (e) {
+    console.error('Supabase Client initialization error:', e);
   }
-} else {
-  console.log(`Database Mode: Using local SQLite at: ${dbPath}`);
 }
 
 // -------------------------------------------------------------
@@ -424,18 +418,34 @@ const all = (sql, params = []) => {
 // Database Initialization
 // -------------------------------------------------------------
 export async function initializeDatabase() {
-  if (isSupabaseActive) {
-    // Supabase DB is already active, schema is loaded externally.
-    // For seamless setup, we assume tables exist. 
-    console.log('Database Mode: Supabase PostgreSQL initialized.');
-    return;
+  if (isSupabaseActive && supabase) {
+    try {
+      const { error } = await supabase.from('users').select('id').limit(1);
+      if (!error) {
+        console.log('Database Mode: Supabase PostgreSQL active and verified.');
+        return;
+      }
+    } catch (err) {
+      console.warn('Supabase verification warning:', err.message);
+    }
   }
 
-  // SQLite initialization
-  console.log('Database Mode: Initializing local SQLite database...');
-  for (const tableSql of CREATE_TABLES) {
-    await run(tableSql);
+  // Fallback to SQLite initialization if Supabase is not active
+  try {
+    if (!sqliteDb) {
+      const sqlite3Module = await import('sqlite3');
+      sqlite3 = sqlite3Module.default || sqlite3Module;
+      const dbPath = path.resolve(process.env.VERCEL ? '/tmp/facultyreport.db' : 'facultyreport.db');
+      sqliteDb = new sqlite3.Database(dbPath);
+    }
+    console.log('Database Mode: Initializing local SQLite database...');
+    for (const tableSql of CREATE_TABLES) {
+      await run(tableSql);
+    }
+  } catch (err) {
+    console.log('SQLite fallback unavailable:', err.message);
   }
+}
 
   // Auto-migrate schema columns for existing SQLite databases
   const alterMigrations = [

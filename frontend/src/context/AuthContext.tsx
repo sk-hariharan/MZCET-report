@@ -60,6 +60,19 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     fetchProfile();
   }, [token]);
 
+  const safeJsonParse = async (res: Response) => {
+    const contentType = res.headers.get('content-type');
+    if (contentType && contentType.includes('application/json')) {
+      try {
+        return await res.json();
+      } catch (e) {
+        // Fallback to text
+      }
+    }
+    const text = await res.text();
+    throw new Error(text || `Server responded with status ${res.status}`);
+  };
+
   const login = async (email: string, password: string): Promise<User> => {
     setError(null);
     try {
@@ -69,7 +82,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         body: JSON.stringify({ email, password })
       });
 
-      const data = await res.json();
+      const data = await safeJsonParse(res);
 
       if (!res.ok) {
         throw new Error(data.message || 'Login failed');
@@ -80,8 +93,9 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       setUser(data.user);
       return data.user;
     } catch (err: any) {
-      setError(err.message || 'Login error');
-      throw err;
+      const msg = err.message || 'Login error';
+      setError(msg);
+      throw new Error(msg);
     }
   };
 
@@ -94,7 +108,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         body: JSON.stringify(userData)
       });
 
-      const data = await res.json();
+      const data = await safeJsonParse(res);
 
       if (!res.ok) {
         throw new Error(data.message || 'Registration failed');
