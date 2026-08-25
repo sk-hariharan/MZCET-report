@@ -142,6 +142,7 @@ const MainLayout: React.FC = () => {
         } else if (user.role === 'hod') {
           return (
             <HodDashboard 
+              currentTab={currentTab}
               onReviewReport={handleReviewReport} 
               onPreviewReport={handlePreviewReport} 
             />
