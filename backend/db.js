@@ -466,7 +466,7 @@ export async function initializeDatabase() {
       "ALTER TABLE teaching_activities ADD COLUMN exp_remaining TEXT"
     ];
     for (const sql of alterMigrations) {
-      try { await run(sql); } catch (e) {}
+      try { await run(sql); } catch (e) { }
     }
 
     // Seed demo data if users table is empty
@@ -492,7 +492,7 @@ export async function initializeDatabase() {
 
       // Seed demo accounts with password mzcet@1234
       const passwordHash = await bcrypt.hash('mzcet@1234', 10);
-      
+
       // Staff: id=1
       await run(
         `INSERT INTO users (email, password_hash, name, staff_id, role, department_id, designation, phone, qualification, specialization, date_of_joining, academic_year, semester) 
@@ -645,12 +645,14 @@ export const db = {
     }
   },
 
-  // Departments
   getDepartments: async () => {
     if (isSupabaseActive) {
-      const { data, error } = await supabase.from('departments').select('*, users(name)');
+      const { data, error } = await supabase.from('departments').select('*, users!fk_departments_hod(name)');
       if (error) throw error;
-      return data.map(d => ({ ...d, hod_name: d.users?.name }));
+      return data.map(d => ({
+        ...d,
+        hod_name: (Array.isArray(d.users) ? d.users[0]?.name : d.users?.name) || null
+      }));
     } else {
       return await all('SELECT d.*, u.name as hod_name FROM departments d LEFT JOIN users u ON d.hod_id = u.id');
     }
@@ -757,7 +759,7 @@ export const db = {
         .eq('academic_year', academicYear)
         .eq('semester', semester)
         .eq('month', month);
-      
+
       if (weekNumber !== undefined && weekNumber !== null) {
         query = query.eq('week_number', weekNumber);
       }
@@ -854,7 +856,7 @@ export const db = {
   getReportById: async (id) => {
     if (isSupabaseActive) {
       const { data: report, error } = await supabase.from('reports')
-        .select('*, users!reports_staff_id_fkey(name, staff_id, designation, phone, qualification, specialization, departments!users_department_id_fkey(department_name), users(name))')
+        .select('*, users!reports_staff_id_fkey(name, staff_id, designation, phone, qualification, specialization, department_id, departments!users_department_id_fkey(department_name, users!fk_departments_hod(name)))')
         .eq('id', id).maybeSingle();
       if (error) throw error;
       if (!report) return null;
@@ -867,7 +869,8 @@ export const db = {
       report.qualification = staff?.qualification;
       report.specialization = staff?.specialization;
       report.department_name = staff?.departments?.department_name;
-      report.hod_name = staff?.users?.name; // HOD is the staff's supervisor
+      report.department_id = staff?.department_id;
+      report.hod_name = staff?.departments?.users?.name || null; // HOD is the staff's supervisor
 
       // Get all child tables
       const subTables = [
@@ -1019,7 +1022,7 @@ export const db = {
 
       if (filters.search) {
         const srch = filters.search.toLowerCase();
-        filtered = filtered.filter(r => 
+        filtered = filtered.filter(r =>
           (r.staff_name && r.staff_name.toLowerCase().includes(srch)) ||
           (r.staff_code && r.staff_code.toLowerCase().includes(srch)) ||
           (r.department_name && r.department_name.toLowerCase().includes(srch)) ||
@@ -1108,7 +1111,7 @@ export const db = {
         'UPDATE reports SET status = ?, reviewed_by = ?, review_comments = ?, approved_at = ?, updated_at = ? WHERE id = ?',
         [status, reviewerId, comments, approvedAt, timestamp, id]
       );
-      
+
       const logAction = status === 'Submitted' ? 'SUBMIT' : status === 'Approved' ? 'APPROVE' : status === 'Rejected' ? 'REJECT' : 'RESUBMIT';
       await run(
         'INSERT INTO audit_logs (report_id, action, actor_id, actor_name, review_comments) VALUES (?, ?, ?, ?, ?)',
@@ -1324,7 +1327,7 @@ export const db = {
           .select('id, status, teaching_activities(syllabus_pct), student_attendance(avg_attendance_pct), users!reports_staff_id_fkey(department_id)')
           .eq('status', 'Approved');
         // Filter by month/semester/year and department
-        reports = (data || []).filter(r => 
+        reports = (data || []).filter(r =>
           r.users?.department_id === dept.id &&
           (!academicYear || r.academic_year === academicYear) &&
           (!semester || r.semester === semester) &&
@@ -1361,7 +1364,7 @@ export const db = {
         if (r.student_attendance) {
           r.student_attendance.forEach(a => { attendanceSum += a.avg_attendance_pct || 0; attendanceCount++; });
         }
-        
+
         // Event counter
         if (isSupabaseActive) {
           const { count } = await supabase.from('events').select('id', { count: 'exact' }).eq('report_id', r.id);
