@@ -115,6 +115,7 @@ export const ReportReviewModal: React.FC<ReportReviewModalProps> = ({
 
   const handleDownload = async (format: 'word' | 'ppt') => {
     try {
+      setActionLoading(true);
       const endpoint = format === 'word' ? 'word' : 'ppt';
       const res = await fetch(`${apiBaseUrl}/reports/${reportId}/${endpoint}`, {
         headers: { 'Authorization': `Bearer ${token}` }
@@ -129,6 +130,8 @@ export const ReportReviewModal: React.FC<ReportReviewModalProps> = ({
       a.remove();
     } catch (err: any) {
       alert(`Download failed: ${err.message}`);
+    } finally {
+      setActionLoading(false);
     }
   };
 

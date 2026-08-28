@@ -31,8 +31,10 @@ async function computeDepartmentSummaryData(departmentId, academic_year, semeste
   let projectSum = 0;
   let achievementSum = 0;
 
-  for (const report of allReports) {
-    const detailed = await db.getReportById(report.id);
+  const detailedReports = await Promise.all(allReports.map(report => db.getReportById(report.id)));
+
+  for (const detailed of detailedReports) {
+    if (!detailed) continue;
 
     // Teaching
     if (detailed.teaching_activities) {
@@ -122,8 +124,10 @@ async function computeCollegeSummaryData(academic_year, semester, month) {
     let projectSum = 0;
     let achievementSum = 0;
 
-    for (const report of allReports) {
-      const detailed = await db.getReportById(report.id);
+    const detailedList = await Promise.all(allReports.map(report => db.getReportById(report.id)));
+
+    for (const detailed of detailedList) {
+      if (!detailed) continue;
       if (detailed.teaching_activities) {
         detailed.teaching_activities.forEach(t => {
           syllabusSum += t.syllabus_pct || 0;

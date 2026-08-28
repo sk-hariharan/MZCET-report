@@ -11,7 +11,8 @@ import {
   Download,
   RefreshCw,
   Award,
-  Trash2
+  Trash2,
+  Loader2
 } from 'lucide-react';
 import type { FullReport } from '../types';
 
@@ -127,26 +128,41 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ currentTab = 'da
     return () => clearInterval(interval);
   }, [token, searchQuery, selectedDept, selectedStatus, selectedMonth, selectedAY, selectedSem]);
 
+  const [deletingId, setDeletingId] = useState<number | null>(null);
+  const [downloadingKey, setDownloadingKey] = useState<string | null>(null);
+
   const handleDeleteReport = async (reportId: number) => {
     if (!window.confirm(`Are you sure you want to delete report #${reportId}? This action cannot be undone.`)) {
       return;
     }
+    const prevReports = [...allReports];
     try {
+      setDeletingId(reportId);
+      // Optimistic update
+      setAllReports(prev => prev.filter(r => r.id !== reportId));
+
       const res = await fetch(`${apiBaseUrl}/reports/${reportId}`, {
         method: 'DELETE',
         headers: { 'Authorization': `Bearer ${token}` }
       });
       const data = await res.json();
-      if (!res.ok) throw new Error(data.message || 'Failed to delete report');
+      if (!res.ok) {
+        setAllReports(prevReports);
+        throw new Error(data.message || 'Failed to delete report');
+      }
       fetchAdminData();
     } catch (err: any) {
       alert(`Delete Error: ${err.message}`);
+    } finally {
+      setDeletingId(null);
     }
   };
 
   // Exporters for College level summary
   const handleCollegeReportDownload = async (format: 'word' | 'excel' | 'ppt') => {
+    const key = `college-${format}`;
     try {
+      setDownloadingKey(key);
       const url = `${apiBaseUrl}/analytics/college-monthly-summary/${format}?academic_year=${selectedAY}&semester=${selectedSem}&month=${selectedMonth}`;
       const res = await fetch(url, {
         headers: { 'Authorization': `Bearer ${token}` }
@@ -165,12 +181,16 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ currentTab = 'da
       a.remove();
     } catch (err: any) {
       alert(`Export error: ${err.message}`);
+    } finally {
+      setDownloadingKey(null);
     }
   };
 
   // Exporters for Department level summary
   const handleDeptReportDownload = async (deptId: number, deptName: string, format: 'pdf' | 'word' | 'excel' | 'ppt') => {
+    const key = `dept-${deptId}-${format}`;
     try {
+      setDownloadingKey(key);
       const url = `${apiBaseUrl}/analytics/department-monthly-summary/${format}?department_id=${deptId}&academic_year=${selectedAY}&semester=${selectedSem}&month=${selectedMonth}`;
       const res = await fetch(url, {
         headers: { 'Authorization': `Bearer ${token}` }
@@ -189,11 +209,15 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ currentTab = 'da
       a.remove();
     } catch (err: any) {
       alert(`Export error: ${err.message}`);
+    } finally {
+      setDownloadingKey(null);
     }
   };
 
   const handleDownloadExcel = async (report: FullReport) => {
+    const key = `${report.id}-excel`;
     try {
+      setDownloadingKey(key);
       const res = await fetch(`${apiBaseUrl}/reports/${report.id}/excel`, {
         headers: { 'Authorization': `Bearer ${token}` }
       });
@@ -208,11 +232,15 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ currentTab = 'da
       a.remove();
     } catch (err: any) {
       alert(`Excel export error: ${err.message}`);
+    } finally {
+      setDownloadingKey(null);
     }
   };
 
   const handleDownloadWord = async (report: FullReport) => {
+    const key = `${report.id}-word`;
     try {
+      setDownloadingKey(key);
       const res = await fetch(`${apiBaseUrl}/reports/${report.id}/word`, {
         headers: { 'Authorization': `Bearer ${token}` }
       });
@@ -227,11 +255,15 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ currentTab = 'da
       a.remove();
     } catch (err: any) {
       alert(`Word download error: ${err.message}`);
+    } finally {
+      setDownloadingKey(null);
     }
   };
 
   const handleDownloadPptx = async (report: FullReport) => {
+    const key = `${report.id}-ppt`;
     try {
+      setDownloadingKey(key);
       const res = await fetch(`${apiBaseUrl}/reports/${report.id}/ppt`, {
         headers: { 'Authorization': `Bearer ${token}` }
       });
@@ -246,11 +278,15 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ currentTab = 'da
       a.remove();
     } catch (err: any) {
       alert(`PowerPoint download error: ${err.message}`);
+    } finally {
+      setDownloadingKey(null);
     }
   };
 
   const handleDownloadPdf = async (report: FullReport) => {
+    const key = `${report.id}-pdf`;
     try {
+      setDownloadingKey(key);
       const res = await fetch(`${apiBaseUrl}/reports/${report.id}/pdf`, {
         headers: { 'Authorization': `Bearer ${token}` }
       });
@@ -265,6 +301,8 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ currentTab = 'da
       a.remove();
     } catch (err: any) {
       alert(`PDF download error: ${err.message}`);
+    } finally {
+      setDownloadingKey(null);
     }
   };
 
@@ -501,9 +539,10 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ currentTab = 'da
                         {report.status === 'Draft' ? '—' : (
                           <button 
                             onClick={() => handleDownloadPdf(report)}
-                            className="text-xs font-bold text-rose-600 hover:text-rose-800 bg-rose-50 px-2.5 py-1 rounded-lg border border-rose-200/50"
+                            disabled={downloadingKey === `${report.id}-pdf`}
+                            className="text-xs font-bold text-rose-600 hover:text-rose-800 disabled:opacity-50 inline-flex items-center gap-1 bg-rose-50 px-2.5 py-1 rounded-lg border border-rose-200/50"
                           >
-                            PDF
+                            {downloadingKey === `${report.id}-pdf` ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : null} PDF
                           </button>
                         )}
                       </td>
@@ -511,9 +550,10 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ currentTab = 'da
                         {report.status === 'Draft' ? '—' : (
                           <button 
                             onClick={() => handleDownloadWord(report)}
-                            className="text-xs font-bold text-blue-600 hover:text-blue-800 bg-blue-50 px-2.5 py-1 rounded-lg border border-blue-200/50"
+                            disabled={downloadingKey === `${report.id}-word`}
+                            className="text-xs font-bold text-blue-600 hover:text-blue-800 disabled:opacity-50 inline-flex items-center gap-1 bg-blue-50 px-2.5 py-1 rounded-lg border border-blue-200/50"
                           >
-                            DOCX
+                            {downloadingKey === `${report.id}-word` ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : null} DOCX
                           </button>
                         )}
                       </td>
@@ -521,9 +561,10 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ currentTab = 'da
                         {report.status === 'Draft' ? '—' : (
                           <button 
                             onClick={() => handleDownloadPptx(report)}
-                            className="text-xs font-bold text-amber-600 hover:text-amber-800 bg-amber-50 px-2.5 py-1 rounded-lg border border-amber-200/50"
+                            disabled={downloadingKey === `${report.id}-ppt`}
+                            className="text-xs font-bold text-amber-600 hover:text-amber-800 disabled:opacity-50 inline-flex items-center gap-1 bg-amber-50 px-2.5 py-1 rounded-lg border border-amber-200/50"
                           >
-                            PPTX
+                            {downloadingKey === `${report.id}-ppt` ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : null} PPTX
                           </button>
                         )}
                       </td>
@@ -536,10 +577,11 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ currentTab = 'da
                         </button>
                         <button 
                           onClick={() => handleDeleteReport(report.id)}
-                          className="text-rose-600 hover:text-rose-800 p-1.5 hover:bg-rose-50 rounded-xl inline-flex items-center gap-1 text-xs font-bold transition-colors"
+                          disabled={deletingId === report.id}
+                          className="text-rose-600 hover:text-rose-800 disabled:opacity-50 p-1.5 hover:bg-rose-50 rounded-xl inline-flex items-center gap-1 text-xs font-bold transition-colors"
                           title="Delete Report"
                         >
-                          <Trash2 className="h-4 w-4" /> Delete
+                          {deletingId === report.id ? <Loader2 className="h-4 w-4 animate-spin" /> : <Trash2 className="h-4 w-4" />} Delete
                         </button>
                       </td>
                     </tr>

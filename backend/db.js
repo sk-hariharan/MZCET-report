@@ -872,7 +872,7 @@ export const db = {
       report.department_id = staff?.department_id;
       report.hod_name = staff?.departments?.users?.name || null; // HOD is the staff's supervisor
 
-      // Get all child tables
+      // Get all child tables concurrently
       const subTables = [
         'teaching_activities', 'student_attendance', 'assessments', 'remedial_activities',
         'mentoring', 'project_guidance', 'department_activities', 'events', 'fdp_training',
@@ -880,11 +880,13 @@ export const db = {
         'administrative_activities', 'lab_activities', 'meetings', 'issues', 'future_plans',
         'additional_remarks', 'weekly_attendance_summary', 'documents', 'audit_logs'
       ];
-      for (const table of subTables) {
-        const { data, error: subErr } = await supabase.from(table).select('*').eq('report_id', id);
-        if (subErr) throw subErr;
-        report[table] = data;
-      }
+      const results = await Promise.all(
+        subTables.map(table => supabase.from(table).select('*').eq('report_id', id))
+      );
+      subTables.forEach((table, idx) => {
+        if (results[idx].error) throw results[idx].error;
+        report[table] = results[idx].data || [];
+      });
       return report;
     } else {
       const report = await get(
@@ -906,9 +908,12 @@ export const db = {
         'administrative_activities', 'lab_activities', 'meetings', 'issues', 'future_plans',
         'additional_remarks', 'weekly_attendance_summary', 'documents', 'audit_logs'
       ];
-      for (const table of subTables) {
-        report[table] = await all(`SELECT * FROM ${table} WHERE report_id = ?`, [id]);
-      }
+      const results = await Promise.all(
+        subTables.map(table => all(`SELECT * FROM ${table} WHERE report_id = ?`, [id]))
+      );
+      subTables.forEach((table, idx) => {
+        report[table] = results[idx] || [];
+      });
       return report;
     }
   },
@@ -918,9 +923,9 @@ export const db = {
       const { error: updateErr } = await supabase.from('reports').update(reportMeta).eq('id', id);
       if (updateErr) throw updateErr;
 
-      // Update sub tables: delete old, insert new (standard relational logic for simple transactional forms)
+      // Update sub tables concurrently
       const subTables = Object.keys(sectionData);
-      for (const table of subTables) {
+      await Promise.all(subTables.map(async (table) => {
         const { error: delErr } = await supabase.from(table).delete().eq('report_id', id);
         if (delErr) throw delErr;
 
@@ -934,7 +939,7 @@ export const db = {
           const { error: insErr } = await supabase.from(table).insert(rowsWithReportId);
           if (insErr) throw insErr;
         }
-      }
+      }));
       return { id, ...reportMeta };
     } else {
       const keys = Object.keys(reportMeta);
@@ -978,15 +983,11 @@ export const db = {
       'additional_remarks', 'documents', 'audit_logs'
     ];
     if (isSupabaseActive) {
-      for (const table of subTables) {
-        await supabase.from(table).delete().eq('report_id', id);
-      }
+      await Promise.all(subTables.map(table => supabase.from(table).delete().eq('report_id', id)));
       const { error } = await supabase.from('reports').delete().eq('id', id);
       if (error) throw error;
     } else {
-      for (const table of subTables) {
-        await run(`DELETE FROM ${table} WHERE report_id = ?`, [id]);
-      }
+      await Promise.all(subTables.map(table => run(`DELETE FROM ${table} WHERE report_id = ?`, [id])));
       await run('DELETE FROM reports WHERE id = ?', [id]);
     }
   },

@@ -2,6 +2,10 @@ import express from 'express';
 import { db } from '../db.js';
 import { authenticateToken, authorizeRoles } from '../middleware/auth.js';
 import { sendEmail } from '../services/emailService.js';
+import { generateDocx } from '../services/docxGenerator.js';
+import { generatePptx } from '../services/pptxGenerator.js';
+import { generatePdf } from '../services/pdfGenerator.js';
+import { generateStaffReportExcel } from '../services/excelGenerator.js';
 
 const router = express.Router();
 
@@ -470,7 +474,6 @@ router.get('/:id/word', authenticateToken, async (req, res) => {
       return res.status(403).json({ message: 'You do not have permission to download reports from another department' });
     }
 
-    const { generateDocx } = await import('../services/docxGenerator.js');
     const docxBuffer = await generateDocx(report);
 
     // File naming rule: StaffReport_Dr_Kumar_IT_August_2026.docx
@@ -507,7 +510,6 @@ router.get('/:id/ppt', authenticateToken, async (req, res) => {
       return res.status(403).json({ message: 'You do not have permission to download reports from another department' });
     }
 
-    const { generatePptx } = await import('../services/pptxGenerator.js');
     const pptxBuffer = await generatePptx(report);
 
     // File naming rule: StaffReport_Dr_Kumar_IT_August_2026.pptx
@@ -544,7 +546,6 @@ router.get('/:id/pdf', authenticateToken, async (req, res) => {
       return res.status(403).json({ message: 'You do not have permission to download reports from another department' });
     }
 
-    const { generatePdf } = await import('../services/pdfGenerator.js');
     const pdfBuffer = await generatePdf(report);
 
     // File naming rule: StaffReport_Dr_Kumar_IT_August_2026.pdf
@@ -580,7 +581,6 @@ router.get('/:id/excel', authenticateToken, async (req, res) => {
       return res.status(403).json({ message: 'You do not have permission to download reports from another department' });
     }
 
-    const { generateStaffReportExcel } = await import('../services/excelGenerator.js');
     const excelBuffer = await generateStaffReportExcel(report);
 
     const cleanStaff = report.staff_name ? report.staff_name.replace(/[\s\.]+/g, '_') : 'Staff';

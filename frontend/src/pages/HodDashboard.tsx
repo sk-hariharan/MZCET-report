@@ -14,7 +14,8 @@ import {
   History,
   BarChart3,
   ClipboardCheck,
-  FolderOpen
+  FolderOpen,
+  Loader2
 } from 'lucide-react';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 import type { FullReport } from '../types';
@@ -97,20 +98,36 @@ export const HodDashboard: React.FC<HodDashboardProps> = ({ currentTab, onReview
     return () => clearInterval(interval);
   }, [token]);
 
+  const [deletingId, setDeletingId] = useState<number | null>(null);
+  const [downloadingKey, setDownloadingKey] = useState<string | null>(null);
+
   const handleDeleteReport = async (reportId: number) => {
     if (!window.confirm(`Are you sure you want to delete report #${reportId}? This action cannot be undone.`)) {
       return;
     }
+    const prevPending = [...pendingQueue];
+    const prevAll = [...allReports];
     try {
+      setDeletingId(reportId);
+      // Optimistic update
+      setPendingQueue(prev => prev.filter(r => r.id !== reportId));
+      setAllReports(prev => prev.filter(r => r.id !== reportId));
+
       const res = await fetch(`${apiBaseUrl}/reports/${reportId}`, {
         method: 'DELETE',
         headers: { 'Authorization': `Bearer ${token}` }
       });
       const data = await res.json();
-      if (!res.ok) throw new Error(data.message || 'Failed to delete report');
+      if (!res.ok) {
+        setPendingQueue(prevPending);
+        setAllReports(prevAll);
+        throw new Error(data.message || 'Failed to delete report');
+      }
       fetchHodData();
     } catch (err: any) {
       alert(`Delete Error: ${err.message}`);
+    } finally {
+      setDeletingId(null);
     }
   };
 
@@ -123,7 +140,9 @@ export const HodDashboard: React.FC<HodDashboardProps> = ({ currentTab, onReview
   })).slice(0, 8);
 
   const handleDownloadWord = async (report: FullReport) => {
+    const key = `${report.id}-word`;
     try {
+      setDownloadingKey(key);
       const res = await fetch(`${apiBaseUrl}/reports/${report.id}/word`, {
         headers: { 'Authorization': `Bearer ${token}` }
       });
@@ -138,11 +157,15 @@ export const HodDashboard: React.FC<HodDashboardProps> = ({ currentTab, onReview
       a.remove();
     } catch (err: any) {
       alert(`Word export error: ${err.message}`);
+    } finally {
+      setDownloadingKey(null);
     }
   };
 
   const handleDownloadPptx = async (report: FullReport) => {
+    const key = `${report.id}-ppt`;
     try {
+      setDownloadingKey(key);
       const res = await fetch(`${apiBaseUrl}/reports/${report.id}/ppt`, {
         headers: { 'Authorization': `Bearer ${token}` }
       });
@@ -157,11 +180,15 @@ export const HodDashboard: React.FC<HodDashboardProps> = ({ currentTab, onReview
       a.remove();
     } catch (err: any) {
       alert(`PowerPoint export error: ${err.message}`);
+    } finally {
+      setDownloadingKey(null);
     }
   };
 
   const handleDownloadPdf = async (report: FullReport) => {
+    const key = `${report.id}-pdf`;
     try {
+      setDownloadingKey(key);
       const res = await fetch(`${apiBaseUrl}/reports/${report.id}/pdf`, {
         headers: { 'Authorization': `Bearer ${token}` }
       });
@@ -176,11 +203,15 @@ export const HodDashboard: React.FC<HodDashboardProps> = ({ currentTab, onReview
       a.remove();
     } catch (err: any) {
       alert(`PDF export error: ${err.message}`);
+    } finally {
+      setDownloadingKey(null);
     }
   };
 
   const handleDownloadExcel = async (report: FullReport) => {
+    const key = `${report.id}-excel`;
     try {
+      setDownloadingKey(key);
       const res = await fetch(`${apiBaseUrl}/reports/${report.id}/excel`, {
         headers: { 'Authorization': `Bearer ${token}` }
       });
@@ -195,6 +226,8 @@ export const HodDashboard: React.FC<HodDashboardProps> = ({ currentTab, onReview
       a.remove();
     } catch (err: any) {
       alert(`Excel export error: ${err.message}`);
+    } finally {
+      setDownloadingKey(null);
     }
   };
 
@@ -461,8 +494,8 @@ export const HodDashboard: React.FC<HodDashboardProps> = ({ currentTab, onReview
                         {report.status === 'Draft' ? (
                           <span className="text-slate-300 text-xs">—</span>
                         ) : (
-                          <button onClick={() => handleDownloadPdf(report)} className="text-xs font-bold text-rose-600 hover:text-rose-800 bg-rose-50 px-2 py-1 rounded-lg border border-rose-200/50">
-                            PDF
+                          <button onClick={() => handleDownloadPdf(report)} disabled={downloadingKey === `${report.id}-pdf`} className="text-xs font-bold text-rose-600 hover:text-rose-800 disabled:opacity-50 inline-flex items-center gap-1 bg-rose-50 px-2 py-1 rounded-lg border border-rose-200/50">
+                            {downloadingKey === `${report.id}-pdf` ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : null} PDF
                           </button>
                         )}
                       </td>
@@ -470,8 +503,8 @@ export const HodDashboard: React.FC<HodDashboardProps> = ({ currentTab, onReview
                         {report.status === 'Draft' ? (
                           <span className="text-slate-300 text-xs">—</span>
                         ) : (
-                          <button onClick={() => handleDownloadWord(report)} className="text-xs font-bold text-blue-600 hover:text-blue-800 bg-blue-50 px-2 py-1 rounded-lg border border-blue-200/50">
-                            DOCX
+                          <button onClick={() => handleDownloadWord(report)} disabled={downloadingKey === `${report.id}-word`} className="text-xs font-bold text-blue-600 hover:text-blue-800 disabled:opacity-50 inline-flex items-center gap-1 bg-blue-50 px-2 py-1 rounded-lg border border-blue-200/50">
+                            {downloadingKey === `${report.id}-word` ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : null} DOCX
                           </button>
                         )}
                       </td>
@@ -479,8 +512,8 @@ export const HodDashboard: React.FC<HodDashboardProps> = ({ currentTab, onReview
                         {report.status === 'Draft' ? (
                           <span className="text-slate-300 text-xs">—</span>
                         ) : (
-                          <button onClick={() => handleDownloadExcel(report)} className="text-xs font-bold text-emerald-600 hover:text-emerald-800 bg-emerald-50 px-2 py-1 rounded-lg border border-emerald-200/50">
-                            XLSX
+                          <button onClick={() => handleDownloadExcel(report)} disabled={downloadingKey === `${report.id}-excel`} className="text-xs font-bold text-emerald-600 hover:text-emerald-800 disabled:opacity-50 inline-flex items-center gap-1 bg-emerald-50 px-2 py-1 rounded-lg border border-emerald-200/50">
+                            {downloadingKey === `${report.id}-excel` ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : null} XLSX
                           </button>
                         )}
                       </td>
@@ -488,8 +521,8 @@ export const HodDashboard: React.FC<HodDashboardProps> = ({ currentTab, onReview
                         {report.status === 'Draft' ? (
                           <span className="text-slate-300 text-xs">—</span>
                         ) : (
-                          <button onClick={() => handleDownloadPptx(report)} className="text-xs font-bold text-amber-600 hover:text-amber-800 bg-amber-50 px-2 py-1 rounded-lg border border-amber-200/50">
-                            PPTX
+                          <button onClick={() => handleDownloadPptx(report)} disabled={downloadingKey === `${report.id}-ppt`} className="text-xs font-bold text-amber-600 hover:text-amber-800 disabled:opacity-50 inline-flex items-center gap-1 bg-amber-50 px-2 py-1 rounded-lg border border-amber-200/50">
+                            {downloadingKey === `${report.id}-ppt` ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : null} PPTX
                           </button>
                         )}
                       </td>
@@ -497,8 +530,8 @@ export const HodDashboard: React.FC<HodDashboardProps> = ({ currentTab, onReview
                         <button onClick={() => onPreviewReport(report.id)} className="text-slate-600 hover:text-slate-900 font-bold inline-flex items-center gap-1 text-xs hover:bg-slate-100 px-2.5 py-1 rounded-xl transition-all">
                           <Eye className="h-3.5 w-3.5" /> View
                         </button>
-                        <button onClick={() => handleDeleteReport(report.id)} className="text-rose-600 hover:text-rose-800 p-1 hover:bg-rose-50 rounded-xl inline-flex items-center gap-1 text-xs font-bold transition-colors" title="Delete Report">
-                          <Trash2 className="h-3.5 w-3.5" />
+                        <button onClick={() => handleDeleteReport(report.id)} disabled={deletingId === report.id} className="text-rose-600 hover:text-rose-800 disabled:opacity-50 p-1 hover:bg-rose-50 rounded-xl inline-flex items-center gap-1 text-xs font-bold transition-colors" title="Delete Report">
+                          {deletingId === report.id ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Trash2 className="h-3.5 w-3.5" />}
                         </button>
                       </td>
                     </tr>

@@ -17,7 +17,8 @@ import {
   Check,
   Building2,
   UserCheck,
-  Trash2
+  Trash2,
+  Loader2
 } from 'lucide-react';
 import type { FullReport } from '../types';
 
@@ -32,6 +33,8 @@ export const ReportPreview: React.FC<ReportPreviewProps> = ({ reportId, onBack, 
   const [report, setReport] = useState<FullReport | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [isDeleting, setIsDeleting] = useState(false);
+  const [downloadingFormat, setDownloadingFormat] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<'overview' | 'academics' | 'activities' | 'research' | 'plans' | 'documents'>('overview');
 
   useEffect(() => {
@@ -41,12 +44,9 @@ export const ReportPreview: React.FC<ReportPreviewProps> = ({ reportId, onBack, 
         const res = await fetch(`${apiBaseUrl}/reports/${reportId}`, {
           headers: { 'Authorization': `Bearer ${token}` }
         });
+        if (!res.ok) throw new Error('Report not found');
         const data = await res.json();
-        if (res.ok) {
-          setReport(data.report);
-        } else {
-          setError(data.message || 'Failed to load report preview');
-        }
+        setReport(data);
       } catch (err: any) {
         setError('Network error fetching report details');
       } finally {
@@ -63,6 +63,7 @@ export const ReportPreview: React.FC<ReportPreviewProps> = ({ reportId, onBack, 
       return;
     }
     try {
+      setIsDeleting(true);
       const res = await fetch(`${apiBaseUrl}/reports/${report.id}`, {
         method: 'DELETE',
         headers: { 'Authorization': `Bearer ${token}` }
@@ -72,12 +73,15 @@ export const ReportPreview: React.FC<ReportPreviewProps> = ({ reportId, onBack, 
       onBack();
     } catch (err: any) {
       alert(`Delete Error: ${err.message}`);
+    } finally {
+      setIsDeleting(false);
     }
   };
 
   const handleDownloadWord = async () => {
     if (!report) return;
     try {
+      setDownloadingFormat('word');
       const res = await fetch(`${apiBaseUrl}/reports/${report.id}/word`, {
         headers: { 'Authorization': `Bearer ${token}` }
       });
@@ -92,12 +96,15 @@ export const ReportPreview: React.FC<ReportPreviewProps> = ({ reportId, onBack, 
       a.remove();
     } catch (err: any) {
       alert(`Word download error: ${err.message}`);
+    } finally {
+      setDownloadingFormat(null);
     }
   };
 
   const handleDownloadPptx = async () => {
     if (!report) return;
     try {
+      setDownloadingFormat('ppt');
       const res = await fetch(`${apiBaseUrl}/reports/${report.id}/ppt`, {
         headers: { 'Authorization': `Bearer ${token}` }
       });
@@ -112,12 +119,15 @@ export const ReportPreview: React.FC<ReportPreviewProps> = ({ reportId, onBack, 
       a.remove();
     } catch (err: any) {
       alert(`PowerPoint download error: ${err.message}`);
+    } finally {
+      setDownloadingFormat(null);
     }
   };
 
   const handleDownloadPdf = async () => {
     if (!report) return;
     try {
+      setDownloadingFormat('pdf');
       const res = await fetch(`${apiBaseUrl}/reports/${report.id}/pdf`, {
         headers: { 'Authorization': `Bearer ${token}` }
       });
@@ -132,12 +142,15 @@ export const ReportPreview: React.FC<ReportPreviewProps> = ({ reportId, onBack, 
       a.remove();
     } catch (err: any) {
       alert(`PDF download error: ${err.message}`);
+    } finally {
+      setDownloadingFormat(null);
     }
   };
 
   const handleDownloadExcel = async () => {
     if (!report) return;
     try {
+      setDownloadingFormat('excel');
       const res = await fetch(`${apiBaseUrl}/reports/${report.id}/excel`, {
         headers: { 'Authorization': `Bearer ${token}` }
       });
@@ -152,6 +165,8 @@ export const ReportPreview: React.FC<ReportPreviewProps> = ({ reportId, onBack, 
       a.remove();
     } catch (err: any) {
       alert(`Excel download error: ${err.message}`);
+    } finally {
+      setDownloadingFormat(null);
     }
   };
 
@@ -220,27 +235,31 @@ export const ReportPreview: React.FC<ReportPreviewProps> = ({ reportId, onBack, 
             <>
               <button
                 onClick={handleDownloadPdf}
-                className="flex items-center gap-2 bg-rose-600 hover:bg-rose-700 text-white font-extrabold text-xs py-2.5 px-4 rounded-xl shadow-md shadow-rose-900/20 transition-all hover:scale-105"
+                disabled={downloadingFormat === 'pdf'}
+                className="flex items-center gap-2 bg-rose-600 hover:bg-rose-700 disabled:opacity-50 text-white font-extrabold text-xs py-2.5 px-4 rounded-xl shadow-md shadow-rose-900/20 transition-all hover:scale-105"
               >
-                <FileText className="h-4 w-4" /> PDF Report
+                {downloadingFormat === 'pdf' ? <Loader2 className="h-4 w-4 animate-spin" /> : <FileText className="h-4 w-4" />} PDF Report
               </button>
               <button
                 onClick={handleDownloadWord}
-                className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white font-extrabold text-xs py-2.5 px-4 rounded-xl shadow-md shadow-blue-900/20 transition-all hover:scale-105"
+                disabled={downloadingFormat === 'word'}
+                className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 disabled:opacity-50 text-white font-extrabold text-xs py-2.5 px-4 rounded-xl shadow-md shadow-blue-900/20 transition-all hover:scale-105"
               >
-                <FileText className="h-4 w-4" /> Word DOCX
+                {downloadingFormat === 'word' ? <Loader2 className="h-4 w-4 animate-spin" /> : <FileText className="h-4 w-4" />} Word DOCX
               </button>
               <button
                 onClick={handleDownloadExcel}
-                className="flex items-center gap-2 bg-emerald-600 hover:bg-emerald-700 text-white font-extrabold text-xs py-2.5 px-4 rounded-xl shadow-md shadow-emerald-900/20 transition-all hover:scale-105"
+                disabled={downloadingFormat === 'excel'}
+                className="flex items-center gap-2 bg-emerald-600 hover:bg-emerald-700 disabled:opacity-50 text-white font-extrabold text-xs py-2.5 px-4 rounded-xl shadow-md shadow-emerald-900/20 transition-all hover:scale-105"
               >
-                <FileCode className="h-4 w-4" /> Excel XLSX
+                {downloadingFormat === 'excel' ? <Loader2 className="h-4 w-4 animate-spin" /> : <FileCode className="h-4 w-4" />} Excel XLSX
               </button>
               <button
                 onClick={handleDownloadPptx}
-                className="flex items-center gap-2 bg-amber-600 hover:bg-amber-700 text-white font-extrabold text-xs py-2.5 px-4 rounded-xl shadow-md shadow-amber-900/20 transition-all hover:scale-105"
+                disabled={downloadingFormat === 'ppt'}
+                className="flex items-center gap-2 bg-amber-600 hover:bg-amber-700 disabled:opacity-50 text-white font-extrabold text-xs py-2.5 px-4 rounded-xl shadow-md shadow-amber-900/20 transition-all hover:scale-105"
               >
-                <FileCode className="h-4 w-4" /> PPTX
+                {downloadingFormat === 'ppt' ? <Loader2 className="h-4 w-4 animate-spin" /> : <FileCode className="h-4 w-4" />} PPTX
               </button>
             </>
           )}
@@ -254,10 +273,11 @@ export const ReportPreview: React.FC<ReportPreviewProps> = ({ reportId, onBack, 
           )}
           <button
             onClick={handleDeleteReport}
-            className="flex items-center gap-1.5 bg-rose-50 hover:bg-rose-100 text-rose-700 font-extrabold text-xs py-2.5 px-3.5 rounded-xl border border-rose-200 transition-all"
+            disabled={isDeleting}
+            className="flex items-center gap-1.5 bg-rose-50 hover:bg-rose-100 disabled:opacity-50 text-rose-700 font-extrabold text-xs py-2.5 px-3.5 rounded-xl border border-rose-200 transition-all"
             title="Delete Report"
           >
-            <Trash2 className="h-4 w-4" /> Delete Report
+            {isDeleting ? <Loader2 className="h-4 w-4 animate-spin" /> : <Trash2 className="h-4 w-4" />} Delete Report
           </button>
         </div>
       </div>

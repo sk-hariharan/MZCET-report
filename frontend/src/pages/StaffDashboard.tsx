@@ -13,7 +13,8 @@ import {
   FolderOpen,
   RefreshCw,
   Search,
-  History
+  History,
+  Loader2
 } from 'lucide-react';
 import type { FullReport } from '../types';
 
@@ -52,6 +53,10 @@ export const StaffDashboard: React.FC<StaffDashboardProps> = ({
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
   const [typeFilter, setTypeFilter] = useState('all');
+
+  // Async action state
+  const [deletingId, setDeletingId] = useState<number | null>(null);
+  const [downloadingKey, setDownloadingKey] = useState<string | null>(null);
 
   const fetchDashboardData = async () => {
     try {
@@ -93,21 +98,33 @@ export const StaffDashboard: React.FC<StaffDashboardProps> = ({
     if (!window.confirm(`Are you sure you want to delete report #${reportId}? This action cannot be undone.`)) {
       return;
     }
+    const previousHistory = [...history];
     try {
+      setDeletingId(reportId);
+      // Optimistic update
+      setHistory(prev => prev.filter(r => r.id !== reportId));
+
       const res = await fetch(`${apiBaseUrl}/reports/${reportId}`, {
         method: 'DELETE',
         headers: { 'Authorization': `Bearer ${token}` }
       });
       const data = await res.json();
-      if (!res.ok) throw new Error(data.message || 'Failed to delete report');
+      if (!res.ok) {
+        setHistory(previousHistory);
+        throw new Error(data.message || 'Failed to delete report');
+      }
       fetchDashboardData();
     } catch (err: any) {
       alert(`Delete Error: ${err.message}`);
+    } finally {
+      setDeletingId(null);
     }
   };
 
   const handleDownloadWord = async (report: FullReport) => {
+    const key = `${report.id}-word`;
     try {
+      setDownloadingKey(key);
       const res = await fetch(`${apiBaseUrl}/reports/${report.id}/word`, {
         headers: { 'Authorization': `Bearer ${token}` }
       });
@@ -122,11 +139,15 @@ export const StaffDashboard: React.FC<StaffDashboardProps> = ({
       a.remove();
     } catch (err: any) {
       alert(`Word download error: ${err.message}`);
+    } finally {
+      setDownloadingKey(null);
     }
   };
 
   const handleDownloadPptx = async (report: FullReport) => {
+    const key = `${report.id}-ppt`;
     try {
+      setDownloadingKey(key);
       const res = await fetch(`${apiBaseUrl}/reports/${report.id}/ppt`, {
         headers: { 'Authorization': `Bearer ${token}` }
       });
@@ -141,11 +162,15 @@ export const StaffDashboard: React.FC<StaffDashboardProps> = ({
       a.remove();
     } catch (err: any) {
       alert(`PowerPoint download error: ${err.message}`);
+    } finally {
+      setDownloadingKey(null);
     }
   };
 
   const handleDownloadPdf = async (report: FullReport) => {
+    const key = `${report.id}-pdf`;
     try {
+      setDownloadingKey(key);
       const res = await fetch(`${apiBaseUrl}/reports/${report.id}/pdf`, {
         headers: { 'Authorization': `Bearer ${token}` }
       });
@@ -160,11 +185,15 @@ export const StaffDashboard: React.FC<StaffDashboardProps> = ({
       a.remove();
     } catch (err: any) {
       alert(`PDF download error: ${err.message}`);
+    } finally {
+      setDownloadingKey(null);
     }
   };
 
   const handleDownloadExcel = async (report: FullReport) => {
+    const key = `${report.id}-excel`;
     try {
+      setDownloadingKey(key);
       const res = await fetch(`${apiBaseUrl}/reports/${report.id}/excel`, {
         headers: { 'Authorization': `Bearer ${token}` }
       });
@@ -179,6 +208,8 @@ export const StaffDashboard: React.FC<StaffDashboardProps> = ({
       a.remove();
     } catch (err: any) {
       alert(`Excel download error: ${err.message}`);
+    } finally {
+      setDownloadingKey(null);
     }
   };
 
@@ -454,9 +485,10 @@ export const StaffDashboard: React.FC<StaffDashboardProps> = ({
                       ) : (
                         <button 
                           onClick={() => handleDownloadPdf(report)}
-                          className="text-rose-600 hover:text-rose-800 font-extrabold inline-flex items-center gap-1 text-xs bg-rose-50 hover:bg-rose-100 px-2 py-1 rounded-lg transition-all border border-rose-200/60"
+                          disabled={downloadingKey === `${report.id}-pdf`}
+                          className="text-rose-600 hover:text-rose-800 disabled:opacity-50 font-extrabold inline-flex items-center gap-1 text-xs bg-rose-50 hover:bg-rose-100 px-2 py-1 rounded-lg transition-all border border-rose-200/60"
                         >
-                          <FileText className="h-3.5 w-3.5" /> PDF
+                          {downloadingKey === `${report.id}-pdf` ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <FileText className="h-3.5 w-3.5" />} PDF
                         </button>
                       )}
                     </td>
@@ -466,9 +498,10 @@ export const StaffDashboard: React.FC<StaffDashboardProps> = ({
                       ) : (
                         <button 
                           onClick={() => handleDownloadWord(report)}
-                          className="text-blue-600 hover:text-blue-800 font-extrabold inline-flex items-center gap-1 text-xs bg-blue-50 hover:bg-blue-100 px-2 py-1 rounded-lg transition-all border border-blue-200/60"
+                          disabled={downloadingKey === `${report.id}-word`}
+                          className="text-blue-600 hover:text-blue-800 disabled:opacity-50 font-extrabold inline-flex items-center gap-1 text-xs bg-blue-50 hover:bg-blue-100 px-2 py-1 rounded-lg transition-all border border-blue-200/60"
                         >
-                          <FileText className="h-3.5 w-3.5" /> DOCX
+                          {downloadingKey === `${report.id}-word` ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <FileText className="h-3.5 w-3.5" />} DOCX
                         </button>
                       )}
                     </td>
@@ -478,9 +511,10 @@ export const StaffDashboard: React.FC<StaffDashboardProps> = ({
                       ) : (
                         <button 
                           onClick={() => handleDownloadExcel(report)}
-                          className="text-emerald-600 hover:text-emerald-800 font-extrabold inline-flex items-center gap-1 text-xs bg-emerald-50 hover:bg-emerald-100 px-2 py-1 rounded-lg transition-all border border-emerald-200/60"
+                          disabled={downloadingKey === `${report.id}-excel`}
+                          className="text-emerald-600 hover:text-emerald-800 disabled:opacity-50 font-extrabold inline-flex items-center gap-1 text-xs bg-emerald-50 hover:bg-emerald-100 px-2 py-1 rounded-lg transition-all border border-emerald-200/60"
                         >
-                          <FileCode className="h-3.5 w-3.5" /> XLSX
+                          {downloadingKey === `${report.id}-excel` ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <FileCode className="h-3.5 w-3.5" />} XLSX
                         </button>
                       )}
                     </td>
@@ -490,9 +524,10 @@ export const StaffDashboard: React.FC<StaffDashboardProps> = ({
                       ) : (
                         <button 
                           onClick={() => handleDownloadPptx(report)}
-                          className="text-amber-600 hover:text-amber-800 font-extrabold inline-flex items-center gap-1 text-xs bg-amber-50 hover:bg-amber-100 px-2 py-1 rounded-lg transition-all border border-amber-200/60"
+                          disabled={downloadingKey === `${report.id}-ppt`}
+                          className="text-amber-600 hover:text-amber-800 disabled:opacity-50 font-extrabold inline-flex items-center gap-1 text-xs bg-amber-50 hover:bg-amber-100 px-2 py-1 rounded-lg transition-all border border-amber-200/60"
                         >
-                          <FileCode className="h-3.5 w-3.5" /> PPTX
+                          {downloadingKey === `${report.id}-ppt` ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <FileCode className="h-3.5 w-3.5" />} PPTX
                         </button>
                       )}
                     </td>
@@ -517,10 +552,11 @@ export const StaffDashboard: React.FC<StaffDashboardProps> = ({
 
                       <button 
                         onClick={() => handleDeleteReport(report.id)}
-                        className="text-rose-600 hover:text-rose-800 p-2 hover:bg-rose-50 rounded-xl inline-flex items-center gap-1 text-xs font-bold transition-colors"
+                        disabled={deletingId === report.id}
+                        className="text-rose-600 hover:text-rose-800 disabled:opacity-50 p-2 hover:bg-rose-50 rounded-xl inline-flex items-center gap-1 text-xs font-bold transition-colors"
                         title="Delete Report"
                       >
-                        <Trash2 className="h-4 w-4" /> Delete
+                        {deletingId === report.id ? <Loader2 className="h-4 w-4 animate-spin" /> : <Trash2 className="h-4 w-4" />} Delete
                       </button>
                     </td>
                   </tr>
