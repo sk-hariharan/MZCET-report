@@ -135,11 +135,11 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ currentTab = 'da
     if (!window.confirm(`Are you sure you want to delete report #${reportId}? This action cannot be undone.`)) {
       return;
     }
-    const prevReports = [...allReports];
+    const prevReports = [...reports];
     try {
       setDeletingId(reportId);
       // Optimistic update
-      setAllReports(prev => prev.filter(r => r.id !== reportId));
+      setReports(prev => prev.filter(r => r.id !== reportId));
 
       const res = await fetch(`${apiBaseUrl}/reports/${reportId}`, {
         method: 'DELETE',
@@ -147,7 +147,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ currentTab = 'da
       });
       const data = await res.json();
       if (!res.ok) {
-        setAllReports(prevReports);
+        setReports(prevReports);
         throw new Error(data.message || 'Failed to delete report');
       }
       fetchAdminData();

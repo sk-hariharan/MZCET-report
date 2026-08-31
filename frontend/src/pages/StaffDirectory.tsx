@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { Users, Search, Mail, Phone, GraduationCap, RefreshCw } from 'lucide-react';
 import type { User } from '../types';
+import { IT_FACULTY_ROSTER } from '../constants/curriculumData';
 
 export const StaffDirectory: React.FC = () => {
   const { token, apiBaseUrl } = useAuth();
@@ -12,56 +13,56 @@ export const StaffDirectory: React.FC = () => {
   const fetchStaff = async () => {
     try {
       setLoading(true);
-      // Fetch all reports to extract distinct staff with metadata
-      const res = await fetch(`${apiBaseUrl}/reports`, {
-        headers: { 'Authorization': `Bearer ${token}` }
-      });
-      const data = await res.json();
-      const reports = data.reports || [];
-      
-      const map = new Map<number, any>();
-      reports.forEach((r: any) => {
-        if (r.staff_id && !map.has(r.staff_id)) {
-          map.set(r.staff_id, {
-            id: r.staff_id,
-            name: r.staff_name,
-            staff_id: r.staff_code || `MZCET-${r.staff_id}`,
-            role: 'staff',
-            department_name: r.department_name,
-            designation: r.designation,
-            qualification: r.qualification,
-            specialization: r.specialization,
-            email: r.staff_name ? `${r.staff_name.toLowerCase().replace(/ /g, '.')}@mzcet.edu.in` : 'faculty@mzcet.edu.in'
-          });
-        }
+      const map = new Map<string, any>();
+
+      // 1. First add all official MZCET IT faculty roster members
+      IT_FACULTY_ROSTER.forEach((fac, idx) => {
+        const staffCode = fac.idNo ? `ID: ${fac.idNo}` : (fac.staffId ? `ID: ${fac.staffId}` : `MZCET-IT-${idx + 1}`);
+        map.set(fac.name.toLowerCase(), {
+          id: idx + 100,
+          name: fac.name,
+          staff_id: staffCode,
+          role: fac.role,
+          department_name: fac.department,
+          designation: fac.designation + (fac.coordinatorRole ? ` (${fac.coordinatorRole})` : ''),
+          qualification: fac.role === 'hod' ? 'M.Tech., Ph.D.' : 'M.E. / M.Tech.',
+          specialization: 'Information Technology',
+          email: fac.email
+        });
       });
 
-      // Also ensure standard demo faculty are included
-      if (!map.has(1)) {
-        map.set(1, {
-          id: 1,
-          name: 'Mrs. V Brindha Devi',
-          staff_id: 'mzcet@it_coordinator',
-          role: 'staff',
-          department_name: 'Information Technology',
-          designation: 'Assistant Professor',
-          qualification: 'M.E., Ph.D.',
-          specialization: 'Cloud Computing',
-          email: 'staff@mzcet.edu.in'
+      // 2. Fetch reports to extract dynamic active staff from backend
+      try {
+        const res = await fetch(`${apiBaseUrl}/reports`, {
+          headers: { 'Authorization': `Bearer ${token}` }
         });
-      }
-      if (!map.has(2)) {
-        map.set(2, {
-          id: 2,
-          name: 'Dr. P. Rajkumar',
-          staff_id: 'mzcet@it_hod',
-          role: 'hod',
-          department_name: 'Information Technology',
-          designation: 'Professor & Head',
-          qualification: 'M.Tech., Ph.D.',
-          specialization: 'Data Science',
-          email: 'hod.it@mzcet.edu.in'
-        });
+        if (res.ok) {
+          const data = await res.json();
+          const reports = data.reports || [];
+          reports.forEach((r: any) => {
+            if (r.staff_name) {
+              const key = r.staff_name.toLowerCase();
+              if (map.has(key)) {
+                const existing = map.get(key);
+                map.set(key, { ...existing, id: r.staff_id || existing.id });
+              } else {
+                map.set(key, {
+                  id: r.staff_id || Date.now(),
+                  name: r.staff_name,
+                  staff_id: r.staff_code || `MZCET-${r.staff_id}`,
+                  role: 'staff',
+                  department_name: r.department_name || 'Information Technology',
+                  designation: r.designation || 'Faculty Member',
+                  qualification: r.qualification || '',
+                  specialization: r.specialization || '',
+                  email: r.staff_name ? `${r.staff_name.toLowerCase().replace(/ /g, '.')}@mzcet.in` : 'faculty@mzcet.in'
+                });
+              }
+            }
+          });
+        }
+      } catch (err) {
+        console.warn('Backend reports fetch in staff directory:', err);
       }
 
       setStaffList(Array.from(map.values()));

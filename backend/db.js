@@ -497,7 +497,7 @@ export async function initializeDatabase() {
       await run(
         `INSERT INTO users (email, password_hash, name, staff_id, role, department_id, designation, phone, qualification, specialization, date_of_joining, academic_year, semester) 
          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-        ['staff@mzcet.edu.in', passwordHash, 'Mrs. V Brindha Devi', 'mzcet@it_coordinator', 'staff', 1, 'Assistant Professor', '9876543210', 'M.E., Ph.D.', 'Cloud Computing', '2018-06-15', '2025-2026', 'ODD']
+        ['staff@mzcet.edu.in', passwordHash, 'Mrs. V. Brindha Devi', 'mzcet@it_coordinator', 'staff', 1, 'Assistant Professor', '9876543210', 'M.E., Ph.D.', 'Cloud Computing', '2018-06-15', '2025-2026', 'ODD']
       );
 
       // HOD: id=2
@@ -514,14 +514,43 @@ export async function initializeDatabase() {
         ['admin@mzcet.edu.in', passwordHash, 'MZCET Admin Portal', 'mzcet@admin', 'admin', 'System Administrator']
       );
 
+      // Seed full MZCET IT Faculty Roster
+      const facultySeeds = [
+        { name: 'Dr. P. Rajkumar', staff_id: '601', email: 'rajkumar.p@mzcet.in', role: 'hod', designation: 'Professor & Head' },
+        { name: 'Mrs. V. Brindha Devi', staff_id: '1909', email: 'brindhadevi.v@mzcet.in', role: 'staff', designation: 'Assistant Professor' },
+        { name: 'Mrs. R. Saraswathi', staff_id: '2142', email: 'saraswathi.r@mzcet.in', role: 'staff', designation: 'Assistant Professor (V Sem Co-ordinator)' },
+        { name: 'Mrs. R. Sangeetha', staff_id: '2070', email: 'sangeetha.r@mzcet.in', role: 'staff', designation: 'Assistant Professor (III Sem Co-ordinator)' },
+        { name: 'Mrs. A. Arifa Banu', staff_id: '1970', email: 'arifabanu.a@mzcet.in', role: 'staff', designation: 'Assistant Professor (VII Sem Co-ordinator)' },
+        { name: 'Mrs. L. Shalini', staff_id: '2025', email: 'shalini.l@mzcet.in', role: 'staff', designation: 'Assistant Professor' },
+        { name: 'Ms. Ramaprabha', staff_id: '1609', email: 'ramaprabha@mzcet.in', role: 'staff', designation: 'Assistant Professor' },
+        { name: 'Dr. Sabeena', staff_id: '2141', email: 'sabeena@mzcet.in', role: 'staff', designation: 'Assistant Professor' },
+        { name: 'Dr. A. Nivedha', staff_id: '2100', email: 'nivedha.a@mzcet.in', role: 'staff', designation: 'Assistant Professor' },
+        { name: 'Mr. K. Muthuraman', staff_id: '1897', email: 'muthuraman.k@mzcet.in', role: 'staff', designation: 'Assistant Professor' },
+        { name: 'Dr. Pavalamalar', staff_id: 'PAV', email: 'pavalamalar@mzcet.in', role: 'staff', designation: 'Assistant Professor (I Sem Co-ordinator)' },
+        { name: 'Dr. Thirumamagal', staff_id: '2161', email: 'thirumamagal@mzcet.in', role: 'staff', designation: 'Assistant Professor' },
+        { name: 'Mrs. Jenifer', staff_id: '2162', email: 'jenifer@mzcet.in', role: 'staff', designation: 'Assistant Professor' },
+        { name: 'Mrs. Annu Rose', staff_id: 'ANNU', email: 'annurose@mzcet.in', role: 'staff', designation: 'Assistant Professor' },
+        { name: 'Ms. Meenakshi', staff_id: 'MEENA', email: 'meenakshi@mzcet.in', role: 'staff', designation: 'Assistant Professor' },
+        { name: 'Mrs. S. Ammu', staff_id: '1295', email: 'ammu.s@mzcet.in', role: 'staff', designation: 'Assistant Professor' },
+        { name: 'Ms. S. Nivetha', staff_id: '2067', email: 'nivetha.s@mzcet.in', role: 'staff', designation: 'Assistant Professor' }
+      ];
+
+      for (const f of facultySeeds) {
+        await run(
+          `INSERT OR IGNORE INTO users (email, password_hash, name, staff_id, role, department_id, designation, academic_year, semester) 
+           VALUES (?, ?, ?, ?, ?, 1, ?, '2026-2027', 'ODD')`,
+          [f.email, passwordHash, f.name, f.staff_id, f.role, f.designation]
+        );
+      }
+
       // Associate HOD to Department
       await run('UPDATE departments SET hod_id = 2 WHERE id = 1');
 
-      console.log('Database Seeding: Local SQLite seeded successfully!');
+      console.log('Database Seeding: Local SQLite seeded successfully with IT Faculty Roster!');
     } else {
       // Update names, passwords, and staff_ids for existing seed accounts
       const newHash = await bcrypt.hash('mzcet@1234', 10);
-      await run("UPDATE users SET name = 'Mrs. V Brindha Devi', password_hash = ?, staff_id = 'mzcet@it_coordinator' WHERE email = 'staff@mzcet.edu.in' OR staff_id = 'mzcet@it_faculty' OR staff_id = 'mzcet@it_coordinator'", [newHash]);
+      await run("UPDATE users SET name = 'Mrs. V. Brindha Devi', password_hash = ?, staff_id = 'mzcet@it_coordinator' WHERE email = 'staff@mzcet.edu.in' OR staff_id = 'mzcet@it_faculty' OR staff_id = 'mzcet@it_coordinator'", [newHash]);
       await run("UPDATE users SET name = 'Dr. P. Rajkumar', password_hash = ?, staff_id = 'mzcet@it_hod' WHERE email = 'hod.it@mzcet.edu.in' OR staff_id = 'mzcet@it_hod'", [newHash]);
       await run("UPDATE users SET password_hash = ?, staff_id = 'mzcet@admin' WHERE email = 'admin@mzcet.edu.in' OR staff_id = 'mzcet@admin'", [newHash]);
     }

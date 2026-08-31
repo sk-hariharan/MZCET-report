@@ -20,7 +20,7 @@ import {
   CheckSquare
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
-import { ACADEMIC_CURRICULUM, CLASS_ASSIGNED_OPTIONS, WORK_PLAN_DEFAULT_ITEMS, DEPARTMENTS, YEARS, COURSES_DATA } from '../constants/curriculumData';
+import { ACADEMIC_CURRICULUM, CLASS_ASSIGNED_OPTIONS, WORK_PLAN_DEFAULT_ITEMS, DEPARTMENTS, YEARS, COURSES_DATA, IT_FACULTY_ROSTER } from '../constants/curriculumData';
 
 const parseClassAssigned = (classAssigned: string = '', subjectName: string = '', userDept: string = '') => {
   const parts = classAssigned.split(' | ');
@@ -830,6 +830,10 @@ export const MultiStepReportForm = ({ reportType, onCancel, editReportId = null 
                           const updated = [...teaching];
                           if (val !== 'CUSTOM') {
                             updated[idx].subject_name = val;
+                            const foundCourse = COURSES_DATA.find(c => c.full === val);
+                            if (foundCourse && foundCourse.defaultInstructor) {
+                              updated[idx].instructor_name = foundCourse.defaultInstructor;
+                            }
                           } else {
                             updated[idx].subject_name = '';
                           }
@@ -865,14 +869,37 @@ export const MultiStepReportForm = ({ reportType, onCancel, editReportId = null 
                     </div>
 
                     <div>
-                      <label className="text-xs font-bold text-slate-500 uppercase mb-1 block">Course Instructor</label>
-                      <input type="text" className="w-full border p-2.5 rounded-xl text-slate-800" placeholder="Instructor Name"
-                        value={t.instructor_name || ''} onChange={e => {
+                      <label className="text-xs font-bold text-slate-500 uppercase mb-1 block">Course Instructor <span className="text-red-500">*</span></label>
+                      <select
+                        className="w-full border p-2.5 rounded-xl text-slate-800 font-semibold outline-none bg-white"
+                        value={IT_FACULTY_ROSTER.some(f => f.name === t.instructor_name) ? t.instructor_name : (t.instructor_name ? 'CUSTOM' : '')}
+                        onChange={e => {
+                          const val = e.target.value;
                           const updated = [...teaching];
-                          updated[idx].instructor_name = e.target.value;
+                          if (val !== 'CUSTOM') {
+                            updated[idx].instructor_name = val;
+                          } else {
+                            updated[idx].instructor_name = '';
+                          }
                           setTeaching(updated);
                         }}
-                      />
+                      >
+                        <option value="">-- Select Instructor --</option>
+                        {IT_FACULTY_ROSTER.map((fac, fIdx) => (
+                          <option key={fIdx} value={fac.name}>{fac.name}</option>
+                        ))}
+                        <option value="CUSTOM">✏️ Custom / Other Faculty Name</option>
+                      </select>
+
+                      {(!t.instructor_name || !IT_FACULTY_ROSTER.some(f => f.name === t.instructor_name)) && (
+                        <input type="text" className="w-full border p-2.5 rounded-xl text-slate-800 mt-2 bg-blue-50/50" placeholder="Type custom instructor name..."
+                          value={t.instructor_name || ''} onChange={e => {
+                            const updated = [...teaching];
+                            updated[idx].instructor_name = e.target.value;
+                            setTeaching(updated);
+                          }}
+                        />
+                      )}
                     </div>
 
                     <div>
