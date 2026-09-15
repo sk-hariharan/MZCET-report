@@ -11,15 +11,8 @@ import reportsRouter from '../backend/routes/reports.js';
 import analyticsRouter from '../backend/routes/analytics.js';
 import documentsRouter from '../backend/routes/documents.js';
 
+// Load environment configuration
 dotenv.config();
-
-// Ensure process.env has default Supabase credentials on Vercel
-if (!process.env.SUPABASE_URL) {
-  process.env.SUPABASE_URL = 'https://rbzrnnlsmkryoawjzgew.supabase.co';
-}
-if (!process.env.SUPABASE_SERVICE_ROLE_KEY) {
-  process.env.SUPABASE_SERVICE_ROLE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJienJubmxzbWtyeW9hd2p6Z2V3Iiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc4NzIyNDk0MiwiZXhwIjoyMTAyODAwOTQyfQ.gBhX7FxdBXcSCSoFR3UKIBcP8eG2fJ1AnKbTxVC6isg';
-}
 
 const app = express();
 

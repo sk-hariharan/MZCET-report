@@ -2,29 +2,28 @@ import { createClient } from '@supabase/supabase-js';
 import bcrypt from 'bcryptjs';
 import path from 'path';
 import dotenv from 'dotenv';
+import { fileURLToPath } from 'url';
 
 dotenv.config();
 
-// Fallback defaults for seamless Vercel serverless deployment
-const SUPABASE_DEFAULT_URL = 'https://rbzrnnlsmkryoawjzgew.supabase.co';
-const SUPABASE_DEFAULT_SERVICE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJienJubmxzbWtyeW9hd2p6Z2V3Iiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc4NzIyNDk0MiwiZXhwIjoyMTAyODAwOTQyfQ.gBhX7FxdBXcSCSoFR3UKIBcP8eG2fJ1AnKbTxVC6isg';
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
-const supabaseUrl = process.env.SUPABASE_URL || SUPABASE_DEFAULT_URL;
-const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY || SUPABASE_DEFAULT_SERVICE_KEY;
+// Optional Supabase configuration (when live credentials are provided in .env)
+const supabaseUrl = process.env.SUPABASE_URL || '';
+const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY || '';
 
 let supabase = null;
 let sqliteDb = null;
 let sqlite3 = null;
 let isSupabaseActive = false;
 
-if (supabaseUrl && supabaseKey) {
-  try {
-    supabase = createClient(supabaseUrl, supabaseKey);
-    isSupabaseActive = true;
-    console.log('Database Mode: Supabase Client initialized with Cloud PostgreSQL');
-  } catch (e) {
-    console.error('Supabase Client initialization error:', e);
-  }
+export function getIsSupabaseActive() {
+  return isSupabaseActive;
+}
+
+export function getSupabase() {
+  return supabase;
 }
 
 // -------------------------------------------------------------
@@ -418,27 +417,15 @@ const all = (sql, params = []) => {
 // Database Initialization
 // -------------------------------------------------------------
 export async function initializeDatabase() {
-  if (isSupabaseActive && supabase) {
-    try {
-      const { error } = await supabase.from('users').select('id').limit(1);
-      if (!error) {
-        console.log('Database Mode: Supabase PostgreSQL active and verified.');
-        return;
-      }
-    } catch (err) {
-      console.warn('Supabase verification warning:', err.message);
-    }
-  }
-
-  // Fallback to SQLite initialization if Supabase is not active
+  // 1. Initialize local SQLite database first to ensure storage is always ready
   try {
     if (!sqliteDb) {
       const sqlite3Module = await import('sqlite3');
       sqlite3 = sqlite3Module.default || sqlite3Module;
-      const dbPath = path.resolve(process.env.VERCEL ? '/tmp/facultyreport.db' : 'facultyreport.db');
+      const dbPath = path.resolve(process.env.VERCEL ? '/tmp/facultyreport.db' : path.join(__dirname, 'facultyreport.db'));
       sqliteDb = new sqlite3.Database(dbPath);
     }
-    console.log('Database Mode: Initializing local SQLite database...');
+    console.log('Database Mode: Initializing SQLite schema...');
     for (const tableSql of CREATE_TABLES) {
       await run(tableSql);
     }
@@ -471,6 +458,8 @@ export async function initializeDatabase() {
 
     // Seed demo data if users table is empty
     const userCount = await get('SELECT count(*) as count FROM users');
+    const defaultPasswordHash = await bcrypt.hash('mzcet@1234', 10);
+
     if (userCount.count === 0) {
       console.log('Seeding initial departments, semesters and demo accounts...');
 
@@ -490,28 +479,25 @@ export async function initializeDatabase() {
       // Seed academic years
       await run("INSERT INTO academic_years (year_name, active) VALUES (?, ?)", ['2025-2026', 1]);
 
-      // Seed demo accounts with password mzcet@1234
-      const passwordHash = await bcrypt.hash('mzcet@1234', 10);
-
       // Staff: id=1
       await run(
         `INSERT INTO users (email, password_hash, name, staff_id, role, department_id, designation, phone, qualification, specialization, date_of_joining, academic_year, semester) 
          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-        ['staff@mzcet.edu.in', passwordHash, 'Mrs. V. Brindha Devi', 'mzcet@it_coordinator', 'staff', 1, 'Assistant Professor', '9876543210', 'M.E., Ph.D.', 'Cloud Computing', '2018-06-15', '2025-2026', 'ODD']
+        ['staff@mzcet.edu.in', defaultPasswordHash, 'Mrs. V. Brindha Devi', 'mzcet@it_coordinator', 'staff', 1, 'Assistant Professor', '9876543210', 'M.E., Ph.D.', 'Cloud Computing', '2018-06-15', '2025-2026', 'ODD']
       );
 
       // HOD: id=2
       await run(
         `INSERT INTO users (email, password_hash, name, staff_id, role, department_id, designation, phone, qualification, specialization, date_of_joining, academic_year, semester) 
          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-        ['hod.it@mzcet.edu.in', passwordHash, 'Dr. P. Rajkumar', 'mzcet@it_hod', 'hod', 1, 'Professor & Head', '9443212345', 'M.Tech., Ph.D.', 'Data Science', '2010-06-01', '2025-2026', 'ODD']
+        ['hod.it@mzcet.edu.in', defaultPasswordHash, 'Dr. P. Rajkumar', 'mzcet@it_hod', 'hod', 1, 'Professor & Head', '9443212345', 'M.Tech., Ph.D.', 'Data Science', '2010-06-01', '2025-2026', 'ODD']
       );
 
       // Admin: id=3
       await run(
         `INSERT INTO users (email, password_hash, name, staff_id, role, designation) 
          VALUES (?, ?, ?, ?, ?, ?)`,
-        ['admin@mzcet.edu.in', passwordHash, 'MZCET Admin Portal', 'mzcet@admin', 'admin', 'System Administrator']
+        ['admin@mzcet.edu.in', defaultPasswordHash, 'MZCET Admin Portal', 'mzcet@admin', 'admin', 'System Administrator']
       );
 
       // Seed full MZCET IT Faculty Roster
@@ -539,23 +525,48 @@ export async function initializeDatabase() {
         await run(
           `INSERT OR IGNORE INTO users (email, password_hash, name, staff_id, role, department_id, designation, academic_year, semester) 
            VALUES (?, ?, ?, ?, ?, 1, ?, '2026-2027', 'ODD')`,
-          [f.email, passwordHash, f.name, f.staff_id, f.role, f.designation]
+          [f.email, defaultPasswordHash, f.name, f.staff_id, f.role, f.designation]
         );
       }
 
-      // Associate HOD to Department
       await run('UPDATE departments SET hod_id = 2 WHERE id = 1');
-
       console.log('Database Seeding: Local SQLite seeded successfully with IT Faculty Roster!');
     } else {
-      // Update names, passwords, and staff_ids for existing seed accounts
-      const newHash = await bcrypt.hash('mzcet@1234', 10);
-      await run("UPDATE users SET name = 'Mrs. V. Brindha Devi', password_hash = ?, staff_id = 'mzcet@it_coordinator' WHERE email = 'staff@mzcet.edu.in' OR staff_id = 'mzcet@it_faculty' OR staff_id = 'mzcet@it_coordinator'", [newHash]);
-      await run("UPDATE users SET name = 'Dr. P. Rajkumar', password_hash = ?, staff_id = 'mzcet@it_hod' WHERE email = 'hod.it@mzcet.edu.in' OR staff_id = 'mzcet@it_hod'", [newHash]);
-      await run("UPDATE users SET password_hash = ?, staff_id = 'mzcet@admin' WHERE email = 'admin@mzcet.edu.in' OR staff_id = 'mzcet@admin'", [newHash]);
+      // Ensure all seed accounts have the correct valid password hash for mzcet@1234
+      await run("UPDATE users SET password_hash = ? WHERE email = 'staff@mzcet.edu.in' OR staff_id = 'mzcet@it_coordinator'", [defaultPasswordHash]);
+      await run("UPDATE users SET password_hash = ? WHERE email = 'hod.it@mzcet.edu.in' OR staff_id = 'mzcet@it_hod'", [defaultPasswordHash]);
+      await run("UPDATE users SET password_hash = ? WHERE email = 'admin@mzcet.edu.in' OR staff_id = 'mzcet@admin'", [defaultPasswordHash]);
     }
   } catch (err) {
-    console.log('SQLite fallback unavailable:', err.message);
+    console.warn('SQLite initialization error:', err.message);
+  }
+
+  // 2. Validate Supabase connection with a quick timeout (2.5 seconds)
+  if (supabaseUrl && supabaseKey) {
+    try {
+      const testClient = createClient(supabaseUrl, supabaseKey, {
+        auth: { persistSession: false }
+      });
+      const timeoutPromise = new Promise((_, reject) =>
+        setTimeout(() => reject(new Error('Supabase ping timed out')), 2500)
+      );
+      const queryPromise = testClient.from('users').select('id').limit(1);
+      const { data, error } = await Promise.race([queryPromise, timeoutPromise]);
+      if (!error) {
+        supabase = testClient;
+        isSupabaseActive = true;
+        console.log('Database Mode: Supabase PostgreSQL active and verified.');
+        return;
+      } else {
+        console.warn('Supabase not available (' + (error.message || error) + '), using local SQLite database.');
+        isSupabaseActive = false;
+        supabase = null;
+      }
+    } catch (err) {
+      console.warn('Supabase unreachable (' + err.message + '), using local SQLite database.');
+      isSupabaseActive = false;
+      supabase = null;
+    }
   }
 }
 
@@ -565,34 +576,64 @@ export async function initializeDatabase() {
 export const db = {
   // Users CRUD
   getUserByEmail: async (identifier) => {
+    if (!identifier) return null;
+    const clean = String(identifier).trim();
+    const lower = clean.toLowerCase();
+
     if (isSupabaseActive && supabase) {
       try {
         // 1. Try matching by email
         let { data, error } = await supabase.from('users')
           .select('*, departments!users_department_id_fkey(department_name)')
-          .eq('email', identifier)
+          .ilike('email', clean)
           .maybeSingle();
 
         // 2. If not found by email, try matching by staff_id
         if (!data) {
           const res = await supabase.from('users')
             .select('*, departments!users_department_id_fkey(department_name)')
-            .eq('staff_id', identifier)
+            .ilike('staff_id', clean)
             .maybeSingle();
           data = res.data;
         }
 
-        if (data && data.departments) {
-          data.department_name = data.departments.department_name;
+        if (data) {
+          if (data.departments) {
+            data.department_name = data.departments.department_name;
+          }
+          return data;
         }
-        return data || null;
       } catch (err) {
-        console.error('getUserByEmail error:', err.message);
-        return null;
+        console.warn('Supabase getUserByEmail error, trying local SQLite fallback:', err.message);
       }
-    } else {
-      const u = await get('SELECT u.*, d.department_name FROM users u LEFT JOIN departments d ON u.department_id = d.id WHERE u.email = ? OR u.staff_id = ?', [identifier, identifier]);
+    }
+
+    try {
+      const sql = `
+        SELECT u.*, d.department_name 
+        FROM users u 
+        LEFT JOIN departments d ON u.department_id = d.id 
+        WHERE LOWER(u.email) = ? 
+           OR LOWER(u.staff_id) = ?
+           OR (u.role = 'staff' AND (? = 'staff' OR ? = 'staff@mzcet.edu.in' OR ? = 'mzcet@it_coordinator'))
+           OR (u.role = 'hod' AND (? = 'hod' OR ? = 'hod.it@mzcet.edu.in' OR ? = 'mzcet@it_hod'))
+           OR (u.role = 'admin' AND (? = 'admin' OR ? = 'admin@mzcet.edu.in' OR ? = 'mzcet@admin'))
+           OR LOWER(u.email) = ?
+        LIMIT 1
+      `;
+      const domainSuffix = lower.includes('@') ? lower : `${lower}@mzcet.edu.in`;
+      const u = await get(sql, [
+        lower, 
+        lower, 
+        lower, lower, lower, 
+        lower, lower, lower, 
+        lower, lower, lower, 
+        domainSuffix
+      ]);
       return u || null;
+    } catch (err) {
+      console.error('SQLite getUserByEmail error:', err.message);
+      return null;
     }
   },
 

@@ -2,18 +2,13 @@ import express from 'express';
 import multer from 'multer';
 import path from 'path';
 import fs from 'fs';
-import { createClient } from '@supabase/supabase-js';
-import { db } from '../db.js';
+import { db, getIsSupabaseActive, getSupabase } from '../db.js';
 import { authenticateToken } from '../middleware/auth.js';
 import dotenv from 'dotenv';
 
 dotenv.config();
 
 const router = express.Router();
-const isSupabaseActive = !!(process.env.SUPABASE_URL && process.env.SUPABASE_SERVICE_ROLE_KEY);
-const supabase = isSupabaseActive 
-  ? createClient(process.env.SUPABASE_URL, process.env.SUPABASE_SERVICE_ROLE_KEY) 
-  : null;
 
 // Ensure upload folder exists for local storage fallback (/tmp for Vercel)
 const uploadDir = path.resolve(process.env.VERCEL ? '/tmp/uploads' : 'uploads');
@@ -25,19 +20,17 @@ if (!fs.existsSync(uploadDir)) {
   }
 }
 
-// Multer storage selector
-const storage = isSupabaseActive 
-  ? multer.memoryStorage() // Memory buffer for Supabase API uploads
-  : multer.diskStorage({   // Local file system write
-      destination: (req, file, cb) => {
-        cb(null, uploadDir);
-      },
-      filename: (req, file, cb) => {
-        const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1e9);
-        const ext = path.extname(file.originalname);
-        cb(null, file.fieldname + '-' + uniqueSuffix + ext);
-      }
-    });
+// Multer storage selector (local disk storage with uploads dir)
+const storage = multer.diskStorage({
+  destination: (req, file, cb) => {
+    cb(null, uploadDir);
+  },
+  filename: (req, file, cb) => {
+    const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1e9);
+    const ext = path.extname(file.originalname);
+    cb(null, file.fieldname + '-' + uniqueSuffix + ext);
+  }
+});
 
 const fileFilter = (req, file, cb) => {
   const allowedExtensions = ['.pdf', '.docx', '.xlsx', '.xls', '.jpg', '.jpeg', '.png'];
@@ -93,7 +86,10 @@ router.post('/upload', authenticateToken, upload.single('document'), async (req,
     let fileUrl = '';
     const origName = req.file.originalname;
 
-    if (isSupabaseActive) {
+    const isSupabaseActive = getIsSupabaseActive();
+    const supabase = getSupabase();
+
+    if (isSupabaseActive && supabase && req.file.buffer) {
       // Upload memory buffer to Supabase Storage
       const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1e9);
       const ext = path.extname(origName);

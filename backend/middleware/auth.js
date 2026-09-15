@@ -1,17 +1,8 @@
 import jwt from 'jsonwebtoken';
-import { createClient } from '@supabase/supabase-js';
-import { db } from '../db.js';
+import { db, getIsSupabaseActive, getSupabase } from '../db.js';
 import dotenv from 'dotenv';
 
 dotenv.config();
-
-const SUPABASE_DEFAULT_URL = 'https://rbzrnnlsmkryoawjzgew.supabase.co';
-const SUPABASE_DEFAULT_SERVICE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJienJubmxzbWtyeW9hd2p6Z2V3Iiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc4NzIyNDk0MiwiZXhwIjoyMTAyODAwOTQyfQ.gBhX7FxdBXcSCSoFR3UKIBcP8eG2fJ1AnKbTxVC6isg';
-
-const supabaseUrl = process.env.SUPABASE_URL || SUPABASE_DEFAULT_URL;
-const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY || SUPABASE_DEFAULT_SERVICE_KEY;
-const isSupabaseActive = !!(supabaseUrl && supabaseKey);
-const supabase = isSupabaseActive ? createClient(supabaseUrl, supabaseKey) : null;
 
 export async function authenticateToken(req, res, next) {
   const authHeader = req.headers['authorization'];
@@ -38,6 +29,8 @@ export async function authenticateToken(req, res, next) {
     }
 
     // 2. Try Supabase Auth token verification
+    const isSupabaseActive = getIsSupabaseActive();
+    const supabase = getSupabase();
     if (isSupabaseActive && supabase) {
       const { data: { user }, error } = await supabase.auth.getUser(token);
       if (user && !error) {
